@@ -1,0 +1,50 @@
+configure(allprojects) { project ->
+    task printGroup <<{ println projectDir }
+}
+
+configure(subprojects) { subproject ->
+
+    apply plugin: 'java'
+
+    compileJava.options.encoding = 'UTF-8'
+
+    sourceCompatibility=1.7
+    targetCompatibility=1.7
+
+    group = 'com.devsoftbr.' + group("${projectDir}")
+
+    jar {
+        manifest.attributes['Implementation-Title'] = subproject.name
+        manifest.attributes['Implementation-Version'] = subproject.version
+
+        from("${rootProject.projectDir}/src/dist") {
+            include "license.txt"
+            include "notice.txt"
+            into "META-INF"
+            expand(copyright: new Date().format('yyyy'), version: project.version)
+        }
+    }
+
+    task sourcesJar(type: Jar, dependsOn:classes) {
+        classifier = 'sources'
+        from sourceSets.main.allJava
+    }
+}
+
+String group(String dir){
+    dir
+}
+
+task list << {
+    String s = File.separator
+    String pattern = 'src' + s + 'main' + s + 'java' // src/main/java
+    String path
+    rootDir.eachDirRecurse{ File file ->
+        path = file.toString()
+        if (path.endsWith(pattern))
+            println path.replace(rootDir.toString() + s,"").replace(s+pattern,"").replace(s,':');
+    }
+}
+
+
+

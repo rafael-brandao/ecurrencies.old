@@ -1,0 +1,38 @@
+rootProject.name = 'ecurrencies'
+
+// Base
+include 'client','domain','integration','provider','service'
+
+// Services
+
+// Integration
+
+// Liberty Reserve
+include 'domain:liberty-reserve'
+include 'provider:liberty-reserve:service'
+include 'provider:liberty-reserve:transformer:api'
+include 'provider:liberty-reserve:transformer:json'
+include 'provider:liberty-reserve:util'
+
+
+
+/*include rootDir.listFiles().findAll() {
+ (it.isDirectory() && !(it =~ 'src') && !(it =~ '\\.+'))
+ }.collect(){
+ it.getName()
+ }.toArray(new java.lang.String[0])*/
+
+
+
+/*String[] allJavaProjects(){
+ List<String> projects = new ArrayList()
+ String s = File.separator
+ String pattern = 'src' + s + 'main' + s + 'java' // src/main/java
+ String path
+ rootDir.eachDirRecurse{ File file ->
+ path = file.toString()
+ if (path.endsWith(pattern))
+ projects.add(path.replace(rootDir.toString() + s,"").replace(s+pattern,"").replace(s,':'))
+ }
+ return projects
+ }*/
