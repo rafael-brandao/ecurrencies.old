@@ -1,12 +1,5 @@
 rootProject.name = 'ecurrencies'
 
-// Base
-include 'client','domain','integration','provider','service'
-
-// Services
-
-// Integration
-
 // Liberty Reserve
 include 'domain:liberty-reserve'
 include 'provider:liberty-reserve:service'

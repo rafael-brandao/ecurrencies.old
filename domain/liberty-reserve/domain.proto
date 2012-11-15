@@ -1,0 +1,158 @@
+package ecurrencies.domain;
+
+option java_package = "ecurrencies.domain";
+option java_outer_classname = "LibertyReserve";
+
+enum Currency {
+    USD = 1;
+    EURO = 2;
+    GOLD = 3;
+}
+
+enum PaymentPurpose {
+    SALARY = 1;
+    SERVICE = 2;
+}
+
+enum TransactionDirection {
+    INCOMING = 1;
+    OUTGOING = 2;
+}
+
+enum TransactionPrivacy {
+    YES = 1;
+    NO = 2;
+}
+
+enum TransactionSource {
+    SITE = 1;
+    WALLET = 2;
+    API = 3;
+    SCI = 4;
+}
+
+enum TransactionType {
+    TRANSFER = 1;
+}
+
+message RequestHeader {
+    required string apiAccountOwnerId = 1; // validation -> regex = (M|U|X)(\d)+
+    required string apiName = 2;
+    required string apiSecurityWord = 3;
+}
+
+message AccountNameRequest {
+    required RequestHeader requestHeader = 1;
+    required string searchAccountId = 2; // validation -> regex = (M|U|X)(\d)+
+ }
+
+message BalanceRequest {
+    required RequestHeader requestHeader = 1;
+    optional Currency currency = 2;
+}
+
+message FindTransactionRequest {
+    required RequestHeader requestHeader = 1;
+    required int64 batchNumber = 2; // validation -> batchNumber > 0
+}
+
+// validation constraint 1 ->  till > from
+// validation constraint 2 ->  amountFrom > amountTo
+ message HistorySpecification {
+    optional int64 from = 1 [default = 0]; // validation -> from >= 0
+    optional int64 till = 2 [default = 9223372036854775806]; // default = 2⁶³-1 | validation -> till > 0
+    optional Currency currency = 3;
+    optional TransactionDirection transactionDirection = 4;
+    optional string relatedAccountId = 5 [default = ""]; // validation -> regex = \d+\.((\d{2,2}){1,2})
+    optional string merchantReference = 6 [default = ""]; // validation -> varchar(20)
+    optional TransactionSource transactionSource = 7;
+    optional TransactionPrivacy transactionPrivacy = 8;
+    optional string amountFrom = 9 [default = ""]; // validation -> regex = \d+\.((\d{2,2}){1,2})
+    optional string amountTo = 10 [default = ""]; // validation -> regex = \d+\.((\d{2,2}){1,2})
+ }
+
+message HistoryRequest {
+    required RequestHeader requestHeader = 1;
+    required HistorySpecification historySpecification = 2;
+    optional int32 pageIndex = 3 [default = 1]; // validation -> pageIndex > 0
+    optional int32 pageSize = 4 [default = 20]; // validation -> 0 < pageSize <= 20
+ }
+
+message TransferRequest {
+    required RequestHeader requestHeader = 1;
+    required string payeeAccountId = 2; // validation -> regex = (M|U|X)(\d)+
+    required string amount = 3; // validation -> regex = \d+\.((\d{2,2}){1,2})
+    required Currency currency = 4;
+    optional string memo = 5 [default = ""]; // validation -> varchar(250)
+    required string merchantReference = 6; // validation -> varchar(20)
+    optional TransactionType type = 7 [default = TRANSFER];
+    optional bool private = 8 [default = false];
+    optional PaymentPurpose purpose = 9 [default = SERVICE];
+}
+
+message Account {
+    required string accountId = 1; // validation -> regex = (M|U|X)(\d)+
+    required string accountName = 2;
+}
+
+message Balance {
+    required Currency currency = 1;
+    required string balance = 2; // validation -> regex = \d+\.((\d{2,2}){1,2})
+ }
+
+message Transaction {
+    required int64 batchNumber = 1; // validation -> batchNumber > 0
+    required int64 date = 2; // validation -> date > 0
+    required string merchantReference = 3;
+    required TransactionType type = 4;
+    required string payerAccountId = 5; // validation -> regex = (M|U|X)(\d)+
+    required string payerAccountName = 6;
+    required string payeeAccountId = 7; // validation -> regex = (M|U|X)(\d)+
+    required string payeeAccountName = 8;
+    required Currency currency = 9;
+    required string amount = 10; // validation -> regex = \d+\.((\d{2,2}){1,2})
+    required string fee = 11; // validation -> regex = \d+\.((\d{2,2}){1,2})
+    required string closingBalance = 12; // validation -> regex = \d+\.((\d{2,2}){1,2})
+    required string memo = 13; // validation -> varchar(250)
+    required bool private = 14;
+    required TransactionSource source = 15;
+}
+
+enum ResponseStatus {
+    NONE = 0;
+    SUCCESS = 1;
+    ERROR = 2;
+}
+
+message Error {
+    required int32 code = 1;
+    optional string message = 2;
+}
+
+message ResponseHeader {
+    required string id = 1; // validation -> varchar(20)
+    required int64 timestamp = 2; // validation -> timestamp > 0
+    required ResponseStatus status = 3;
+    optional Error error = 4;
+}
+
+message AccountNameResponse {
+    required ResponseHeader responseHeader = 1;
+    optional Account account = 2;
+}
+
+message BalanceResponse {
+    required ResponseHeader responseHeader = 1;
+    repeated Balance balances = 2;
+}
+
+message HistoryResponse {
+    required ResponseHeader responseHeader = 1;
+    optional bool hasMore = 2 [default = false];
+    repeated Transaction transactions = 3;
+}
+
+message TransactionResponse {
+    required ResponseHeader responseHeader = 1;
+    optional Transaction transaction = 2;
+}

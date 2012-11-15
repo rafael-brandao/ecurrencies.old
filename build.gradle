@@ -1,8 +1,4 @@
-configure(allprojects) { project ->
-    task printGroup <<{ println projectDir }
-}
-
-configure(subprojects) { subproject ->
+allprojects{
 
     apply plugin: 'java'
 
@@ -14,8 +10,8 @@ configure(subprojects) { subproject ->
     group = 'com.devsoftbr.' + group("${projectDir}")
 
     jar {
-        manifest.attributes['Implementation-Title'] = subproject.name
-        manifest.attributes['Implementation-Version'] = subproject.version
+        manifest.attributes['Implementation-Title'] = project.name
+        manifest.attributes['Implementation-Version'] = project.version
 
         from("${rootProject.projectDir}/src/dist") {
             include "license.txt"
@@ -30,21 +26,3 @@ configure(subprojects) { subproject ->
         from sourceSets.main.allJava
     }
 }
-
-String group(String dir){
-    dir
-}
-
-task list << {
-    String s = File.separator
-    String pattern = 'src' + s + 'main' + s + 'java' // src/main/java
-    String path
-    rootDir.eachDirRecurse{ File file ->
-        path = file.toString()
-        if (path.endsWith(pattern))
-            println path.replace(rootDir.toString() + s,"").replace(s+pattern,"").replace(s,':');
-    }
-}
-
-
-
