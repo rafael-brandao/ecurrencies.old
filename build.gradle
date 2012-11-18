@@ -7,8 +7,14 @@ allprojects{
     sourceCompatibility=1.7
     targetCompatibility=1.7
 
-    group = 'com.devsoftbr.' + group("${projectDir}")
+    group = 'com.devsoftbr.'
 
+    repositories {
+        maven {
+            url "http://maven.devsoftbr.com:8080/bundles/external"
+        }
+    }
+    
     jar {
         manifest.attributes['Implementation-Title'] = project.name
         manifest.attributes['Implementation-Version'] = project.version

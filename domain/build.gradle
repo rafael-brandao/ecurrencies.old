@@ -1,15 +1,15 @@
 subprojects {
-    sourceSets { protobuf }
+
+    dependencies {
+        compile "com.google.protobuf:com.google.protobuf:${protobufVersion}"
+    }
+
     task compileProtobuf(type:Exec) {
-        doFirst {
-            sourceSets.protobuf.java.srcDirs.each {it.mkdirs()}
-            sourceSets.protobuf.resources.srcDirs.each {it.mkdirs()}
-        }
         sourceSets.main.output.classesDir.mkdirs()
         executable "protoc"
         args "-I=${projectDir}",
-                "--descriptor_set_out=${sourceSets.protobuf.resources}/domain.descriptor",
-                "--java_out=${sourceSets.protobuf.java}",
+                "--descriptor_set_out=${projectDir}/src/main/resources/domain.descriptor",
+                "--java_out=${projectDir}/src/main/java",
                 "${projectDir}/domain.proto"
     }
     compileJava.dependsOn('compileProtobuf')
