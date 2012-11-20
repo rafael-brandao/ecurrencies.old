@@ -3,7 +3,5 @@ Bundle-Name: ${bundleName}
 Bundle-SymbolicName: ${bundleSymbolicName}
 Bundle-Version: ${bundleVersion}
 Bundle-RequiredExecutionEnvironment: ${bundleRequiredExecutionEnvironment}
-Specification-Title: ${bundleName}
-Specification-Version: ${bundleVersion}
 Import-Template: 
  com.google.protobuf.*;version="${protobufRange}"
