@@ -28,7 +28,7 @@ subprojects {
         sourceCompatibility=javaVersion
         targetCompatibility=javaVersion
 
-        group = groupId
+        group = project.groupId
 
         repositories {
             maven { url 'http://maven.devsoftbr.com:8080/bundles/external' }
@@ -36,6 +36,11 @@ subprojects {
         }
 
         jar {
+            baseName = project.artifactId
+            
+            manifest.attributes['Implementation-Title'] = project.artifactId
+            manifest.attributes['Implementation-Version'] = project.version
+            
             from("${rootProject.projectDir}/src/dist") {
                 include "license.txt"
                 include "notice.txt"
