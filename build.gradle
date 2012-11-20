@@ -1,34 +1,113 @@
-allprojects{
+// apply plugin: 'java-base'
 
-    apply plugin: 'java'
+ext {
+    jvm = org.gradle.internal.jvm.Jvm.current()
+    javaVersion = JavaVersion.current()
+    assert javaVersion =~ '1.7'
 
-    compileJava.options.encoding = 'UTF-8'
+    javaProjects = subprojects.findAll{ containsDirectoryTree(it.projectDir, "src/main/java") }
+    protobufProjects = subprojects.findAll{ file("${it.projectDir}/domain.proto").exists() }
+    bundlorProjects = subprojects.findAll{ file("${it.projectDir}/template.mf").exists() }
+}
 
-    sourceCompatibility=1.7
-    targetCompatibility=1.7
+subprojects {
 
-    group = 'com.devsoftbr.'
+    ext{
+        groupId = groupId(project)
+        artifactId = artifactId(project)
+    }
 
-    repositories {
-        maven {
-            url "http://maven.devsoftbr.com:8080/bundles/external"
+    version = rootProject.version
+    
+    if(project in javaProjects || project in protobufProjects){
+
+        apply plugin: 'java'
+
+        compileJava.options.encoding = 'UTF-8'
+
+        sourceCompatibility=javaVersion
+        targetCompatibility=javaVersion
+
+        group = groupId
+
+        repositories {
+            maven { url 'http://maven.devsoftbr.com:8080/bundles/external' }
+            maven { url 'http://repository.springsource.com/maven/bundles/external' }
         }
+
+        jar {
+            from("${rootProject.projectDir}/src/dist") {
+                include "license.txt"
+                include "notice.txt"
+                into "META-INF"
+                expand(copyright: new Date().format('yyyy'), version: project.version)
+            }
+        }
+
+        task sourcesJar(type: Jar, dependsOn:classes) {
+            classifier = 'sources'
+            from sourceSets.main.allJava
+        }
+
+        apply from: "${rootProject.projectDir}/config/protobuf.gradle"
+        apply from: "${rootProject.projectDir}/config/bundlor.gradle"
     }
     
-    jar {
-        manifest.attributes['Implementation-Title'] = project.name
-        manifest.attributes['Implementation-Version'] = project.version
+}
 
-        from("${rootProject.projectDir}/src/dist") {
-            include "license.txt"
-            include "notice.txt"
-            into "META-INF"
-            expand(copyright: new Date().format('yyyy'), version: project.version)
-        }
+/*
+ * 
+ * DOES ANYONE KNOW HOW TO EXTERNALIZE THE BELOW GROOVY METHODS TO ANOTHER SCRIPT?
+ * 
+ */
+def groupId(project){
+    while(project.parent != rootProject)
+        project = project.parent
+    "com.devsoftbr.${rootProject.name}.${project.name}"
+}
+
+def artifactId(project){
+    String artifactId = ""
+    List names = [project.name]
+    while(project.parent != rootProject){
+        names += "-"
+        project = project.parent
+        names += project.name
     }
+    names.reverse()
+    if(names.size <= 3){
+        names.each {artifactId += it}
+    }
+    else{
+        names[names.size()-3..names.size()-1].each {artifactId += it}
+        names[0..names.size()-4].reverse().each {artifactId += it}
+    }
+    artifactId
+}
 
-    task sourcesJar(type: Jar, dependsOn:classes) {
-        classifier = 'sources'
-        from sourceSets.main.allJava
+def containsDirectoryTree(File directory, String directoryTree){
+    containsDir(directory, directoryTree.split('/'))
+}
+
+def containsDir(File directory, String[] directoryTree, int index = 0){
+    if(index == directoryTree.size()){
+        return true
+    }
+    boolean result
+    directory.eachFile{
+        if(it.directory && it.name =~ directoryTree[index])
+        result = containsDir(it, directoryTree, index+1)
+    }
+    result
+}
+
+def loadProperties(String sourceFileName) {
+    def config = new Properties()
+    def propFile = new File(sourceFileName)
+    if (propFile.canRead()) {
+        config.load(new FileInputStream(propFile))
+        for (Map.Entry property in config) {
+            ext[property.key] = property.value
+        }
     }
 }
