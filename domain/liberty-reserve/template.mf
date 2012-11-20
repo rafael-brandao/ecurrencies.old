@@ -1,9 +1,9 @@
 Bundle-ManifestVersion: 2
-Bundle-Name: ${bundle.name}
-Bundle-SymbolicName: ${bundle.symbolicName}
-Bundle-Version: ${bundle.version}
-Bundle-RequiredExecutionEnvironment: ${bundle.requiredExecutionEnvironment}
-Specification-Title: ${bundle.name}
-Specification-Version: ${project.version}
+Bundle-Name: ${bundleName}
+Bundle-SymbolicName: ${bundleSymbolicName}
+Bundle-Version: ${bundleVersion}
+Bundle-RequiredExecutionEnvironment: ${bundleRequiredExecutionEnvironment}
+Specification-Title: ${bundleName}
+Specification-Version: ${bundleVersion}
 Import-Template: 
- com.google.protobuf.*;version="${com.google.protobuf.version:[=.=.=, +1.0.0)}"
+ com.google.protobuf.*;version="${protobufRange}"
