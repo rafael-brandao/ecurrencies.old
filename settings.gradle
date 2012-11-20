@@ -9,23 +9,26 @@ include 'provider:liberty-reserve:util'
 
 
 
-/*include rootDir.listFiles().findAll() {
- (it.isDirectory() && !(it =~ 'src') && !(it =~ '\\.+'))
- }.collect(){
- it.getName()
- }.toArray(new java.lang.String[0])*/
 
+/*
+ *  include rootDir.listFiles().findAll() {
+ *      (it.isDirectory() && !(it =~ 'src') && !(it =~ '\\.+'))
+ *  }.collect(){
+ *      it.getName()
+ *  }.toArray(new java.lang.String[0])
+ */
 
-
-/*String[] allJavaProjects(){
- List<String> projects = new ArrayList()
- String s = File.separator
- String pattern = 'src' + s + 'main' + s + 'java' // src/main/java
- String path
- rootDir.eachDirRecurse{ File file ->
- path = file.toString()
- if (path.endsWith(pattern))
- projects.add(path.replace(rootDir.toString() + s,"").replace(s+pattern,"").replace(s,':'))
- }
- return projects
- }*/
+/*
+ *  String[] allJavaProjects(){
+ *      List<String> projects = new ArrayList()
+ *      String s = File.separator
+ *      String pattern = 'src' + s + 'main' + s + 'java' // src/main/java
+ *      String path
+ *      rootDir.eachDirRecurse{ File file ->
+ *          path = file.toString()
+ *          if (path.endsWith(pattern))
+ *              projects.add(path.replace(rootDir.toString() + s,"").replace(s+pattern,"").replace(s,':'))
+ *      }
+ *      return projects
+ *  }
+ */
