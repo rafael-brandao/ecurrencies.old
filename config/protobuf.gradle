@@ -1,6 +1,6 @@
 if(project in protobufProjects){
 
-    task protobuf(type:Exec) {
+    task protobuf(type:Exec, group: 'build') {
 
         description = "Produces java code from protocol buffer domain specifications"
 
@@ -30,9 +30,10 @@ if(project in protobufProjects){
 
         project.compileJava { dependsOn protobuf }
 
-        doFirst{
+        doFirst {
             if (!javaOutputDir.isDirectory())
                 javaOutputDir.mkdirs()
+
             if (!resourcesOutputDir.isDirectory())
                 resourcesOutputDir.mkdirs()
 

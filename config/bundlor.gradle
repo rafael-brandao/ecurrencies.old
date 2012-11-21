@@ -7,7 +7,7 @@ if(project in bundlorProjects){
         bundleRequiredExecutionEnvironment = "JavaSE-${javaVersion}"
     }
 
-    task bundlor (dependsOn: compileJava) {
+    task bundlor (dependsOn: compileJava, group: 'build') {
 
         description = 'Generates an OSGi-compatibile MANIFEST.MF file.'
 
@@ -50,7 +50,7 @@ if(project in bundlorProjects){
 
         project.jar.manifest.from manifest
 
-        doFirst {
+        doLast {
             ant.taskdef(resource: 'org/eclipse/virgo/bundlor/ant/antlib.xml',
                     classpath: configurations.bundlorconf.asPath)
 
