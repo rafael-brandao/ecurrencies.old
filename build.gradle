@@ -84,8 +84,8 @@ def artifactId(project){
         names.each {artifactId += it}
     }
     else{
-        names[names.size()-3..names.size()-1].each {artifactId += it}
-        names[0..names.size()-4].reverse().each {artifactId += it}
+        names[-3..-1].each {artifactId += it}
+        names[0..-4].reverse().each {artifactId += it}
     }
     artifactId
 }
