@@ -4,7 +4,7 @@ if(project in protobufProjects){
 
         description = "Produces java code from protocol buffer domain specifications"
 
-        def proto = file("${projectDir}/domain.proto")
+        def protoFile = file("${projectDir}/domain.proto")
         def outputDir = file("${project.buildDir}/protobuf")
         def javaOutputDir = file("${outputDir}/java")
         def resourcesOutputDir = file("${outputDir}/resources")
@@ -17,7 +17,7 @@ if(project in protobufProjects){
         //   * main java sources for this project have been modified
         outputs.dir outputDir
         outputs.files descriptorFile
-        inputs.files proto
+        inputs.files protoFile
 
         sourceSets {
             main {
@@ -38,11 +38,12 @@ if(project in protobufProjects){
                 resourcesOutputDir.mkdirs()
 
             logging.captureStandardOutput(LogLevel.INFO)
+
             executable "protoc"
             args "-I=${projectDir}",
                     "--descriptor_set_out=${descriptorFile}",
                     "--java_out=${javaOutputDir}",
-                    "${proto}"
+                    "${protoFile}"
         }
 
     }
