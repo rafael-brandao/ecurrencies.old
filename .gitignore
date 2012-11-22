@@ -3,5 +3,6 @@
 .groovy
 .project
 .settings
+bin
 build
 gradle-app.setting
