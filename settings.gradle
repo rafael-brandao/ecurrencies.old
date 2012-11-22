@@ -1,5 +1,14 @@
 rootProject.name = 'ecurrencies'
 
+// Commons
+include 'commons:utils'
+
+// Services
+include 'service:executor'
+
+// Integration
+include 'integration:amqp'
+
 // Liberty Reserve
 include 'domain:liberty-reserve'
 include 'provider:liberty-reserve:service'
