@@ -43,7 +43,7 @@ jar {
 
             ant.bundlor(failOnWarnings: true,
                     inputPath: inputJarPath,
-                    outputPath: inputJarPath,
+                    outputPath: outputJarPath,
                     manifestTemplatePath: template,
                     propertiesPath: propertiesFile.exists() ? propertiesFile.path : "") {
                         (bundlorProperties + groupVersionBindings).each { k, v ->
