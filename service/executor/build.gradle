@@ -1,0 +1,6 @@
+dependencies {
+    compile "${springGroup}:spring-context:${springVersion}"
+    compile "${slf4jGroup}:slf4j-api:${slf4jVersion}"
+    runtime "${cglibGroup}:com.springsource.net.sf.cglib:${cglibVersion}"
+    testCompile "${springGroup}:spring-test:${springVersion}"
+}
