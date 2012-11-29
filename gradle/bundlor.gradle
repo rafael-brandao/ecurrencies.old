@@ -1,0 +1,55 @@
+project.ext {
+    bundlorProperties = [bundleVersion:version, bundleName:"${artifactId} ${version}",
+                bundleSymbolicName:artifactId, bundleRequiredExecutionEnvironment:"JavaSE-${javaVersion}"]
+}
+
+repositories { mavenRepo url: 'http://build.eclipse.org/rt/virgo/maven/bundles/release' }
+
+configurations{ bundlorconf }
+
+dependencies{
+    bundlorconf "${bundlorGroup}:org.eclipse.virgo.bundlor:${bundlorVersion}",
+            "${bundlorGroup}:org.eclipse.virgo.bundlor.ant:${bundlorVersion}",
+            "${bundlorGroup}:org.eclipse.virgo.bundlor.blint:${bundlorVersion}"
+}
+
+jar {
+    def template = file("${projectDir}/template.mf")
+    inputs.files template
+    
+    afterEvaluate {
+        manifest.attributes << ['Bundle-ManifestVersion' : 2]
+        manifest.attributes << ['Bundle-Version' : bundlorProperties.bundleVersion]
+        manifest.attributes << ['Bundle-Name' : bundlorProperties.bundleName]
+        manifest.attributes << ['Bundle-Name' : bundlorProperties.bundleName]
+        manifest.attributes << ['Bundle-SymbolicName' : bundlorProperties.bundleSymbolicName]
+        if(bundlorProperties.bundleRequiredExecutionEnvironment) {
+            manifest.attributes <<  ['Bundle-RequiredExecutionEnvironment' : bundlorProperties.bundleRequiredExecutionEnvironment]
+        }
+    }
+
+    doLast {
+
+        def inputJar = project.jar.archivePath
+
+        if(inputJar.isFile()) {
+            
+            def inputJarPath = inputJar.path
+            def outputJarPath = inputJarPath
+            def propertiesFile = new File(projectDir, 'bundlor.properties')
+
+            ant.taskdef(resource: 'org/eclipse/virgo/bundlor/ant/antlib.xml',
+                    classpath: configurations.bundlorconf.asPath)
+
+            ant.bundlor(failOnWarnings: true,
+                    inputPath: inputJarPath,
+                    outputPath: inputJarPath,
+                    manifestTemplatePath: template,
+                    propertiesPath: propertiesFile.exists() ? propertiesFile.path : "") {
+                        (bundlorProperties + groupVersionBindings).each { k, v ->
+                            property(name: k, value: v)
+                        }
+                    }
+        }
+    }
+}
