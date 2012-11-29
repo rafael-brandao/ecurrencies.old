@@ -1,0 +1,164 @@
+class Dependency {
+    String configurationName
+    String dependencyNotation
+}
+
+class DependencyCheck {
+    public static final String ANY_SCOPE_PATTERN = /^\*$/
+    public static final String SINGLE_SCOPE_PATTERN = /^((?!\*).)+$/
+    public static final String MULTIPLE_SCOPE_PATTERN = /^\*((?!\*).)+$/
+
+    String configurationPattern
+    String group
+    String name
+
+    def matchesConfiguration(String confName) {
+        if(configurationPattern ==~ ANY_SCOPE_PATTERN)
+            return true
+        else if (configurationPattern ==~ SINGLE_SCOPE_PATTERN)
+            return confName.toLowerCase() ==~ configurationPattern
+        else if (configurationPattern ==~ MULTIPLE_SCOPE_PATTERN)
+            return confName.toLowerCase() =~ configurationPattern[1..-1]
+        false
+    }
+}
+
+class ConditionalDependency {
+    DependencyCheck dependencyCheck
+    Dependency dependency
+}
+
+def engine = new groovy.text.SimpleTemplateEngine()
+
+List<DependencyCheck> dependenciesToExclude = []
+List<ConditionalDependency> conditionalDependencies = [] as LinkedList
+
+def postProcessDependenciesFile = { filePath, action ->
+    def f = file(filePath)
+    assert f.isFile(), "File ${filePath} does not exist."
+
+    f.splitEachLine(',') { items ->
+        items[0] = items[0].trim()
+        if((items[0].size() != 0) && !(items[0] ==~ /^#.*$/) && !(items[0] ==~ /^CHECK+.*$/)) {
+            assert (items[0] ==~ DependencyCheck.ANY_SCOPE_PATTERN ||
+            items[0] ==~ DependencyCheck.SINGLE_SCOPE_PATTERN ||
+            items[0] ==~ DependencyCheck.MULTIPLE_SCOPE_PATTERN),
+            """\
+                Invalid configuration pattern -> '${items[0]}'. File ${f}
+                Examples of valid configuration patterns:
+                    runtime  -> the runtime scope
+                    *compile -> any scope that has "compile" in its name (case insensitive)
+                    *        -> any scope
+                """
+            items[0] = items[0].toLowerCase()
+            for (i in 1 ..< items.size()) {
+                items[i] = items[i].trim()
+                items[i] = engine.createTemplate(items[i]).make(project.groupVersionBindings).toString()
+            }
+            action(items)
+        }
+    }
+}
+
+def replaceCheckAction = { a ->
+    dependenciesToExclude.push(
+            new DependencyCheck(configurationPattern:a[0], group: a[1], name:a[2]))
+    dependencies."${a[3]}"(a[4])
+}
+
+def exclusionAction = { conf ->
+    dependenciesToExclude.findAll { depCheck ->
+        depCheck.matchesConfiguration(conf.name)
+    }.each { depCheck ->
+        conf.exclude group:depCheck.group, module:depCheck.name
+    }
+}
+
+def conditionalAddCheckAction = { a ->
+    conditionalDependencies.push(
+            new ConditionalDependency(
+            dependencyCheck:new DependencyCheck(
+            configurationPattern:a[0], group: a[1], name:a[2]),
+            dependency:new Dependency(
+            configurationName:a[3], dependencyNotation:a[4])))
+}
+
+def addAction = { conf, dep ->
+    conditionalDependencies.findAll{ condDep ->
+        (condDep.dependencyCheck.matchesConfiguration(conf.name) &&
+                condDep.dependencyCheck.group ==~ dep.group &&
+                condDep.dependencyCheck.name ==~ dep.name)
+    }.each { condDep ->
+        dependencies."${condDep.dependency.configurationName}"(condDep.dependency.dependencyNotation)
+        conditionalDependencies.remove condDep
+    }
+}
+
+def resolutionStrategyAction = { conf ->
+    conf.resolutionStrategy {
+        force "${rabbitmqGroup}:amqp-client:${rabbitmqVersion}"
+        force "${hamcrestGroup}:hamcrest-core:${hamcrestVersion}"
+        force "${junitGroup}:junit:${junitVersion}"
+        force "${springGroup}:spring-aop:${springVersion}"
+        force "${springGroup}:spring-asm:${springVersion}"
+        force "${springGroup}:spring-beans:${springVersion}"
+        force "${springGroup}:spring-core:${springVersion}"
+        force "${springGroup}:spring-context:${springVersion}"
+        force "${springGroup}:spring-expression:${springVersion}"
+        force "${springGroup}:spring-tx:${springVersion}"
+        force "${springAmqpGroup}:spring-rabbit:${springAmqpVersion}"
+        force "${springIntegrationGroup}:spring-integration-amqp:${springIntegrationVersion}"
+    }
+}
+
+def evaluateLogbackAction = { conf, dep ->
+    if(conf.name ==~ 'testRuntime' && dep.group ==~ "${logbackGroup}")
+        ext.logbackEnabled = true
+}
+
+def logbackEnabledAction = { testTask ->
+    if(project.hasProperty('logbackEnabled') && logbackEnabled)
+        testTask.configure {
+            systemProperty('logback.configurationFile',
+                "${rootDir.path.replace('\\','/')}/src/shared-resources/logback-test.xml")
+        }     
+}
+
+def evaluateTestNGAction = { conf, dep ->
+    if(conf.name ==~ 'testRuntime' && dep.group ==~ "${testngGroup}") {
+        ext.testngEnabled = true
+        /*dependencies.testRuntime("${reportngGroup}:reportng:${reportngVersion}") {
+            exclude group:"${testngGroup}", module:'testng'
+        }*/
+    }
+}
+
+def testngEnabledAction = { testTask ->
+    if(project.hasProperty('testngEnabled') && testngEnabled)
+        testTask.configure {
+            useTestNG { options ->
+                options.parallel = 'methods'
+                options.threadCount = 10
+                /*options.listeners << 'org.uncommons.reportng.HTMLReporter'
+                options.listeners << 'org.uncommons.reportng.JUnitXMLReporter'*/
+            }            
+        }
+}
+
+afterEvaluate {
+    postProcessDependenciesFile("$rootDir/gradle/dependency/replacement.csv", replaceCheckAction)
+    postProcessDependenciesFile("$rootDir/gradle/dependency/conditional.csv", conditionalAddCheckAction)
+    configurations.all { conf ->
+        resolutionStrategyAction(conf)
+        exclusionAction(conf)
+        conf.allDependencies.each { dep ->
+            addAction(conf, dep)
+            evaluateTestNGAction(conf, dep)
+            evaluateLogbackAction(conf, dep)
+        }
+    }
+    tasks.withType(Test).each { testTask ->
+        testngEnabledAction(testTask)
+        logbackEnabledAction(testTask)
+    }
+}
