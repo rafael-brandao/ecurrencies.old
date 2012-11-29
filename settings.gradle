@@ -8,13 +8,16 @@ include 'service:executor'
 
 // Integration
 include 'integration:amqp'
+include 'integration:control'
 
 // Liberty Reserve
+include 'commons:liberty-reserve'
 include 'domain:liberty-reserve'
 include 'provider:liberty-reserve:service'
 include 'provider:liberty-reserve:transformer:api'
 include 'provider:liberty-reserve:transformer:json'
-include 'provider:liberty-reserve:util'
+include 'provider:liberty-reserve:util:api'
+include 'provider:liberty-reserve:util:implementation'
 
 
 
