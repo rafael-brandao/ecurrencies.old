@@ -119,8 +119,7 @@ def evaluateLogbackAction = { conf, dep ->
 def logbackEnabledAction = { testTask ->
     if(project.hasProperty('logbackEnabled') && logbackEnabled)
         testTask.configure {
-            systemProperty('logback.configurationFile',
-                "${rootDir.path.replace('\\','/')}/src/shared-resources/logback-test.xml")
+            systemProperties << ['logback.configurationFile':"$rootDir/src/shared-resources/logback-test.xml"]
         }     
 }
 
