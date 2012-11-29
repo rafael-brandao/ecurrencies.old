@@ -1,51 +1,118 @@
-// apply plugin: 'java-base'
+import org.codehaus.groovy.jsr223.GroovyCompiledScript;
 
 ext {
     jvm = org.gradle.internal.jvm.Jvm.current()
     javaVersion = JavaVersion.current()
-    assert javaVersion =~ '1.7'
+    assert javaVersion.java7 : "Must use a Java 7 compatible JVM to perform this build. Current JVM is ${jvm}"
 
-    javaProjects = subprojects.findAll{ containsDirectoryTree(it.projectDir, "src/main/java") }
-    protobufProjects = subprojects.findAll{ file("${it.projectDir}/domain.proto").exists() }
-    bundlorProjects = subprojects.findAll{ file("${it.projectDir}/template.mf").exists() }
+    groupVersionBindings = project.ext.properties.findAll{ it.key ==~ /^[\w]+(Group|Version)$/}
+    
+    groovyProjects = []
+    protobufProjects =[]
+    bundlorProjects = []
+
+    subprojects.each{ subproject ->
+        def protobufFiles = subproject.projectDir.listFiles({f ->f ==~ /^.+\.proto$/ } as FileFilter).toList()
+        if(protobufFiles.size()) {
+            protobufProjects.push subproject
+            subproject.ext.protobufFiles = protobufFiles
+        }
+        if(!subproject.childProjects.size() && !(subproject in protobufProjects))
+            groovyProjects.push subproject
+        if((subproject in (groovyProjects + protobufProjects)) && file("${subproject.projectDir}/template.mf").exists())
+            bundlorProjects.push subproject
+    }
+    
+    nonBundlorProjects = (groovyProjects + protobufProjects) - bundlorProjects
+    
+    if(nonBundlorProjects.size() > 0) {
+        def builder = new StringBuilder()
+        nonBundlorProjects.each{builder << "\t${it}\n"}
+        logger.warn """
+The following projects won't have OSGI manifest package scanning , 'template.mf' file is missing :
+
+${builder}
+"""
+    }
+
+}
+
+allprojects {
+    apply from: "$rootDir/gradle/naming.gradle"
+    apply plugin: 'eclipse'
+    eclipse.project.name = (project != rootProject) ? "ecurrencies.$artifactId" : artifactId
+    repositories {
+        mavenCentral()
+        mavenRepo url: 'http://repository.springsource.com/maven/bundles/external'
+        mavenRepo url: 'http://maven.springframework.org/milestone'
+        mavenRepo url: 'http://maven.devsoftbr.com:8080/bundles/external'
+    }
 }
 
 subprojects {
+    version = rootProject.version
 
-    ext{
-        groupId = groupId(project)
-        artifactId = artifactId(project)
+    if(project in groovyProjects){
+
+        apply plugin: 'groovy'
+
+        tasks.each { t ->
+            if(t instanceof JavaCompile || t instanceof GroovyCompile) {
+                t.options.compilerArgs = ['-Xlint:all', '-Werror']
+            }
+        }
+
+        dependencies {
+            groovy "$groovyGroup:groovy-all:$groovyVersion"
+            testCompile "${hamcrestGroup}:hamcrest-library:${hamcrestVersion}"
+            testCompile "${testngGroup}:testng:${testngVersion}"
+        }
+
+        test {
+            enableAssertions = true
+            jvmArgs '-Xms256m', '-Xmx512m'
+            testLogging {
+                showStandardStreams = true
+                exceptionFormat 'full'
+                events 'failed'
+                info.events 'passed'
+                debug.events 'started'
+            }
+        }
+
+        apply from: "$rootDir/gradle/dependencyPostProcessing.gradle"
     }
 
-    version = rootProject.version
-    
-    if(project in javaProjects || project in protobufProjects){
-
+    if(project in protobufProjects) {
         apply plugin: 'java'
+        apply from: "$rootDir/gradle/protobuf.gradle"
+    }
 
-        compileJava.options.encoding = 'UTF-8'
+    if(project in bundlorProjects){
+        apply from: "${rootProject.projectDir}/gradle/bundlor.gradle"
+    }
 
-        sourceCompatibility=javaVersion
-        targetCompatibility=javaVersion
+    if(project in (groovyProjects + protobufProjects)) {
 
-        group = project.groupId
+        sourceCompatibility = javaVersion
+        targetCompatibility = javaVersion
 
-        repositories {
-            maven { url 'http://maven.devsoftbr.com:8080/bundles/external' }
-            maven { url 'http://repository.springsource.com/maven/bundles/external' }
+        tasks.each { t ->
+            if(t instanceof JavaCompile || t instanceof GroovyCompile)
+                t.options.encoding = 'UTF-8'
+            if(t instanceof GroovyCompile)
+                t.groovyOptions.encoding = 'UTF-8'
         }
 
         jar {
-            baseName = project.artifactId
-            
-            manifest.attributes['Implementation-Title'] = project.artifactId
-            manifest.attributes['Implementation-Version'] = project.version
-            
-            from("${rootProject.projectDir}/src/dist") {
+            manifest.attributes << ['Implementation-Title':artifactId]
+            manifest.attributes << ['Implementation-Version':version]
+
+            from("$rootDir/src/dist") {
                 include "license.txt"
                 include "notice.txt"
                 into "META-INF"
-                expand(copyright: new Date().format('yyyy'), version: project.version)
+                expand(copyright: new Date().format('yyyy'), version: version)
             }
         }
 
@@ -53,66 +120,9 @@ subprojects {
             classifier = 'sources'
             from sourceSets.main.allJava
         }
-
-        apply from: "${rootProject.projectDir}/config/protobuf.gradle"
-        apply from: "${rootProject.projectDir}/config/bundlor.gradle"
-    }
-    
-}
-
-/*
- * 
- * DOES ANYONE KNOW HOW TO EXTERNALIZE THE BELOW GROOVY METHODS TO ANOTHER SCRIPT?
- * 
- */
-def groupId(project){
-    while(project.parent != rootProject)
-        project = project.parent
-    "com.devsoftbr.${rootProject.name}.${project.name}"
-}
-
-def artifactId(project){
-    String artifactId = ""
-    List names = [project.name]
-    while(project.parent != rootProject){
-        names += "-"
-        project = project.parent
-        names += project.name
-    }
-    names.reverse()
-    if(names.size <= 3){
-        names.each {artifactId += it}
-    }
-    else{
-        names[-3..-1].each {artifactId += it}
-        names[0..-4].reverse().each {artifactId += it}
-    }
-    artifactId
-}
-
-def containsDirectoryTree(File directory, String directoryTree){
-    containsDir(directory, directoryTree.split('/'))
-}
-
-def containsDir(File directory, String[] directoryTree, int index = 0){
-    if(index == directoryTree.size()){
-        return true
-    }
-    boolean result
-    directory.eachFile{
-        if(it.directory && it.name =~ directoryTree[index])
-        result = containsDir(it, directoryTree, index+1)
-    }
-    result
-}
-
-def loadProperties(String sourceFileName) {
-    def config = new Properties()
-    def propFile = new File(sourceFileName)
-    if (propFile.canRead()) {
-        config.load(new FileInputStream(propFile))
-        for (Map.Entry property in config) {
-            ext[property.key] = property.value
+        
+        afterEvaluate {
+            archivesBaseName = artifactId
         }
     }
 }
