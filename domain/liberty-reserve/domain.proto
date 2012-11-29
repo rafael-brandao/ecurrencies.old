@@ -1,6 +1,6 @@
-package ecurrencies.domain;
+package ecurrencies.domain.libertyreserve;
 
-option java_package = "ecurrencies.domain";
+option java_package = "ecurrencies.domain.libertyreserve";
 option java_outer_classname = "LibertyReserve";
 
 enum Currency {

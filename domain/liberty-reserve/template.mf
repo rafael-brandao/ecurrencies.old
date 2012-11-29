@@ -1,7 +1,4 @@
-Bundle-ManifestVersion: 2
-Bundle-Name: ${bundleName}
-Bundle-SymbolicName: ${bundleSymbolicName}
-Bundle-Version: ${bundleVersion}
-Bundle-RequiredExecutionEnvironment: ${bundleRequiredExecutionEnvironment}
+Export-Template:
+ *;version="${bundleVersion}"
 Import-Template: 
- com.google.protobuf.*;version="${protobufRange}"
+ com.google.protobuf.*;version="${protobufVersion:[=.=.=, +1)}"
