@@ -13,6 +13,7 @@ import static java.lang.invoke.MethodHandles.lookup
 import static java.util.concurrent.TimeUnit.valueOf
 import static org.slf4j.LoggerFactory.getLogger
 import static org.springframework.beans.factory.config.ConfigurableBeanFactory.SCOPE_SINGLETON
+import groovy.util.logging.Slf4j
 
 import java.util.concurrent.ScheduledThreadPoolExecutor
 import java.util.concurrent.ThreadFactory
@@ -78,7 +79,7 @@ class ExecutorServiceConfiguration {
         }
     }
 
-    // @Slf4j
+    @Slf4j
     private static final class CustomizedThreadGroup extends ThreadGroup {
 
         private static final String THREAD_GROUP_NAME = "EcurrenciesProjectThreadGroup"
@@ -89,7 +90,7 @@ class ExecutorServiceConfiguration {
 
         @Override
         void uncaughtException(final Thread thread, final Throwable t) {
-            //log.error "Uncaught exception on ${thread.name}", t
+            log.error "Uncaught exception on ${thread.name}", t
             super.uncaughtException thread, t
         }
     }
