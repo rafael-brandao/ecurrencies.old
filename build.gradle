@@ -22,20 +22,9 @@ ext {
         if((subproject in (groovyProjects + protobufProjects)) && file("${subproject.projectDir}/template.mf").exists())
             bundlorProjects.push subproject
     }
-    
-    nonBundlorProjects = (groovyProjects + protobufProjects) - bundlorProjects
-    
-    if(nonBundlorProjects.size() > 0) {
-        def builder = new StringBuilder()
-        nonBundlorProjects.each{builder << "\t${it}\n"}
-        logger.warn """
-The following projects won't have OSGI manifest package scanning , 'template.mf' file is missing :
-
-${builder}
-"""
-    }
-
 }
+
+apply from: "$rootDir/gradle/osgiProjectsCheck.gradle"
 
 allprojects {
     apply from: "$rootDir/gradle/naming.gradle"
@@ -72,11 +61,13 @@ subprojects {
             enableAssertions = true
             jvmArgs '-Xms256m', '-Xmx512m'
             testLogging {
+                minGranularity = 3
                 showStandardStreams = true
                 exceptionFormat 'full'
                 events 'failed'
                 info.events 'passed'
                 debug.events 'started'
+                stackTraceFilters 'groovy', 'entry_point', 'truncate'
             }
         }
 
