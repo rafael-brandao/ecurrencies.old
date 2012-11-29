@@ -1,0 +1,4 @@
+dependencies {
+    compile "${springIntegrationGroup}:spring-integration-core:${springIntegrationVersion}"
+    runtime "${cglibGroup}:com.springsource.net.sf.cglib:${cglibVersion}"
+}
