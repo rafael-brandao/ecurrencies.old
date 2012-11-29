@@ -1,0 +1,4 @@
+dependencies {
+    compile project(':domain:liberty-reserve')
+    compile "${jodaTimeGroup}:joda-time:${jodaTimeVersion}"
+}
