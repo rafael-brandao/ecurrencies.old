@@ -1,0 +1,5 @@
+dependencies {
+    compile project(':commons:utils')
+    compile "${springIntegrationGroup}:spring-integration-amqp:${springIntegrationVersion}"
+    runtime "${cglibGroup}:com.springsource.net.sf.cglib:${cglibVersion}"
+}
