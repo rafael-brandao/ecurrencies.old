@@ -10,8 +10,5 @@ Import-Template:
  org.springframework.integration.*;version="${springIntegrationVersion:[=.=.=, +1)}",
  org.springframework.*;version="${springVersion:[=.=.=, +1)}"
 Import-Package: 
- net.sf.cglib.core;version="${cglibVersion:[=.=.=, +1)}",
- net.sf.cglib.proxy;version="${cglibVersion:[=.=.=, +1)}",
- net.sf.cglib.reflect;version="${cglibVersion:[=.=.=, +1)}",
  org.springframework.beans.factory;version="${springVersion:[=.=.=, +1)}",
  org.springframework.stereotype;version="${springVersion:[=.=.=, +1)}"
