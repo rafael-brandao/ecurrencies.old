@@ -1,4 +1,4 @@
-package ecurrencies.integration.amqpimport org.springframework.amqp.core.Messageimport org.springframework.amqp.rabbit.core.ChannelAwareMessageListenerimport org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainerimport org.springframework.amqp.support.converter.MessageConverterimport org.springframework.amqp.support.converter.SimpleMessageConverterimport org.springframework.integration.amqp.support.AmqpHeaderMapperimport org.springframework.integration.amqp.support.DefaultAmqpHeaderMapperimport org.springframework.integration.endpoint.MessageProducerSupportimport org.springframework.integration.support.MessageBuilderimport org.springframework.util.Assertimport com.rabbitmq.client.Channel
+package ecurrencies.integration.amqpimport org.springframework.amqp.core.Messageimport org.springframework.amqp.rabbit.core.ChannelAwareMessageListenerimport org.springframework.amqp.rabbit.listener.AbstractMessageListenerContainerimport org.springframework.amqp.support.converter.MessageConverterimport org.springframework.amqp.support.converter.SimpleMessageConverterimport org.springframework.integration.amqp.support.AmqpHeaderMapperimport org.springframework.integration.amqp.support.DefaultAmqpHeaderMapperimport org.springframework.integration.endpoint.MessageProducerSupportimport org.springframework.integration.support.MessageBuilderimport org.springframework.util.Assertimport com.rabbitmq.client.Channel
 class EcurrenciesAmqpInboundChannelAdapter extends MessageProducerSupport {
 
     private final AbstractMessageListenerContainer messageListenerContainer
@@ -24,8 +24,7 @@ class EcurrenciesAmqpInboundChannelAdapter extends MessageProducerSupport {
                     void onMessage(Message message,Channel channel) throws Exception {
                         messageAcknowledgeManager.put(message.messageProperties.deliveryTag, channel)
                         Object payload = messageConverter.fromMessage(message)
-                        Map<String, ?> headers = headerMapper.toHeadersFromRequest(message.messageProperties)
-                        sendMessage(MessageBuilder.withPayload(payload).copyHeaders(headers).build())                    }                }
+                        Map<String, ?> headers = headerMapper.toHeadersFromRequest(message.messageProperties)                        sendMessage(MessageBuilder.withPayload(payload).copyHeaders(headers).build())                    }                }
         this.messageListenerContainer.afterPropertiesSet()
         super.onInit()    }
 

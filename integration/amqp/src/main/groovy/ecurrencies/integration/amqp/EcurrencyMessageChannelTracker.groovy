@@ -1,6 +1,4 @@
-package ecurrencies.integration.amqpimport static ecurrencies.commons.util.PropertyResolver.getRequiredPropertyimport static java.lang.String.formatimport java.util.concurrent.ConcurrentHashMapimport org.springframework.beans.factory.annotation.Autowiredimport org.springframework.context.ApplicationContextimport org.springframework.integration.endpoint.AbstractEndpointimport org.springframework.scheduling.annotation.Async
-
-
+package ecurrencies.integration.amqpimport static ecurrencies.commons.util.PropertyResolver.getRequiredPropertyimport static java.lang.String.formatimport java.util.concurrent.ConcurrentHashMapimport org.springframework.beans.factory.annotation.Autowiredimport org.springframework.context.ApplicationContextimport org.springframework.integration.endpoint.AbstractEndpointimport org.springframework.scheduling.annotation.Async
 class EcurrencyMessageChannelTracker  {    private static final String ECURRENCY_PROVIDER = 'ecurrency-provider'
     private static final String ECURRENCY_SERVICE = 'ecurrency-service'
     private static final String BEAN_NAME = 'amqpInboundChannelAdapter'
