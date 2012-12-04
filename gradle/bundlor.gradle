@@ -1,54 +1,87 @@
 project.ext {
     bundlorProperties = [bundleVersion:version, bundleName:"${artifactId} ${version}",
-                bundleSymbolicName:artifactId, bundleRequiredExecutionEnvironment:"JavaSE-${javaVersion}"]
+                bundleManifestVersion:2, bundleSymbolicName:artifactId,
+                bundleRequiredExecutionEnvironment:"JavaSE-${javaVersion}"]
 }
 
-repositories { mavenRepo url: 'http://build.eclipse.org/rt/virgo/maven/bundles/release' }
+task bundlor {
 
-configurations{ bundlorconf }
+    def bundlorDir = file("${project.buildDir}/bundlor")
 
-dependencies{
-    bundlorconf "${bundlorGroup}:org.eclipse.virgo.bundlor:${bundlorVersion}",
-            "${bundlorGroup}:org.eclipse.virgo.bundlor.ant:${bundlorVersion}",
-            "${bundlorGroup}:org.eclipse.virgo.bundlor.blint:${bundlorVersion}"
-}
-
-jar {
-    def template = file("${projectDir}/template.mf")
-    inputs.files template
-    
-    afterEvaluate {
-        manifest.attributes << ['Bundle-ManifestVersion' : 2]
-        manifest.attributes << ['Bundle-Version' : bundlorProperties.bundleVersion]
-        manifest.attributes << ['Bundle-Name' : bundlorProperties.bundleName]
-        manifest.attributes << ['Bundle-Name' : bundlorProperties.bundleName]
-        manifest.attributes << ['Bundle-SymbolicName' : bundlorProperties.bundleSymbolicName]
-        if(bundlorProperties.bundleRequiredExecutionEnvironment) {
-            manifest.attributes <<  ['Bundle-RequiredExecutionEnvironment' : bundlorProperties.bundleRequiredExecutionEnvironment]
-        }
+    ext {
+        templateFile = file("$projectDir/template.mf")
+        inputPath = project.sourceSets.main.output.classesDir
+        outputPath = file("$bundlorDir")
+        manifestFile = file("$outputPath/META-INF/MANIFEST.MF")
+        propertiesPath = file("$projectDir/bundlor.properties")
+        failOnWarnings = true
+        enabled = true
     }
 
-    doLast {
+    dependsOn classes
+    group = 'build'
+    description = 'Generates an OSGi-compatibile MANIFEST.MF file.'
 
-        def inputJar = project.jar.archivePath
+    inputs.files templateFile, propertiesPath, project.sourceSets.main.runtimeClasspath
+    outputs.files manifestFile
+    outputs.dir bundlorDir
 
-        if(inputJar.isFile()) {
-            
-            def inputJarPath = inputJar.path
-            def outputJarPath = inputJarPath
-            def propertiesFile = new File(projectDir, 'bundlor.properties')
+    if(enabled){
+
+        repositories { mavenRepo url: 'http://build.eclipse.org/rt/virgo/maven/bundles/release' }
+
+        configurations{ bundlorconf }
+
+        dependencies{
+            bundlorconf "${bundlorGroup}:org.eclipse.virgo.bundlor:${bundlorVersion}",
+                    "${bundlorGroup}:org.eclipse.virgo.bundlor.ant:${bundlorVersion}",
+                    "${bundlorGroup}:org.eclipse.virgo.bundlor.blint:${bundlorVersion}"
+        }
+
+        project.jar {
+            dependsOn bundlor
+            inputs.files manifestFile
+            manifest.from manifestFile
+        }
+
+        doLast {
+            logging.captureStandardOutput(LogLevel.INFO)
+
+            if(!inputPath.isDirectory())
+                inputPath.mkdirs()
+
+            // the ant task will throw an exception unless this dir exists
+            if (!outputPath.isDirectory())
+                outputPath.mkdirs()
 
             ant.taskdef(resource: 'org/eclipse/virgo/bundlor/ant/antlib.xml',
                     classpath: configurations.bundlorconf.asPath)
 
-            ant.bundlor(failOnWarnings: true,
-                    inputPath: inputJarPath,
-                    outputPath: outputJarPath,
-                    manifestTemplatePath: template,
-                    propertiesPath: propertiesFile.exists() ? propertiesFile.path : "") {
+            // execute the ant task, and write out the $manifest file
+            ant.bundlor(enabled: enabled,
+                    failOnWarnings: failOnWarnings,
+                    inputPath: inputPath,
+                    outputPath: outputPath,
+                    propertiesPath: propertiesPath.isFile() ? propertiesPath.path : "") {
+
                         (bundlorProperties + groupVersionBindings).each { k, v ->
                             property(name: k, value: v)
                         }
+
+                        def template = """\
+                            Bundle-Version: ${bundlorProperties.bundleVersion}
+                            Bundle-Name: ${bundlorProperties.bundleName}
+                            Bundle-ManifestVersion: ${bundlorProperties.bundleManifestVersion}
+                            Bundle-SymbolicName: ${bundlorProperties.bundleSymbolicName}""".stripIndent()
+
+                        if(templateFile.isFile())
+                            templateFile.eachLine { line -> template += "\n${line}" }
+
+                        logger.info('-------------------------------------------------')
+                        logger.info(template)
+                        logger.info('-------------------------------------------------')
+
+                        manifestTemplate(template)
                     }
         }
     }

@@ -1,5 +1,3 @@
-Export-Template:
- *;version="${bundleVersion}"
 Import-Template: 
  ecurrencies.*;version="${bundleVersion}",
  org.joda.time.*;version="${jodaTimeVersion:[=.=, +1)}"
