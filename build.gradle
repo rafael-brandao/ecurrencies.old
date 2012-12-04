@@ -66,6 +66,15 @@ subprojects {
             }
         }
 
+        task testNG(type: Test) {
+            useTestNG { options ->
+                options.parallel = 'methods'
+                options.threadCount = 10
+            }
+            testReportDir = file("$testReportDir/testng")
+            check.dependsOn testNG
+        }
+
         apply from: "$rootDir/gradle/dependencyPostProcessing.gradle"
     }
 

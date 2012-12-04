@@ -123,27 +123,6 @@ def logbackEnabledAction = { testTask ->
         }     
 }
 
-def evaluateTestNGAction = { conf, dep ->
-    if(conf.name ==~ 'testRuntime' && dep.group ==~ "${testngGroup}") {
-        ext.testngEnabled = true
-        /*dependencies.testRuntime("${reportngGroup}:reportng:${reportngVersion}") {
-            exclude group:"${testngGroup}", module:'testng'
-        }*/
-    }
-}
-
-def testngEnabledAction = { testTask ->
-    if(project.hasProperty('testngEnabled') && testngEnabled)
-        testTask.configure {
-            useTestNG { options ->
-                options.parallel = 'methods'
-                options.threadCount = 10
-                /*options.listeners << 'org.uncommons.reportng.HTMLReporter'
-                options.listeners << 'org.uncommons.reportng.JUnitXMLReporter'*/
-            }            
-        }
-}
-
 afterEvaluate {
     postProcessDependenciesFile("$rootDir/gradle/dependency/replacement.csv", replaceCheckAction)
     postProcessDependenciesFile("$rootDir/gradle/dependency/conditional.csv", conditionalAddCheckAction)
@@ -152,12 +131,10 @@ afterEvaluate {
         exclusionAction(conf)
         conf.allDependencies.each { dep ->
             addAction(conf, dep)
-            evaluateTestNGAction(conf, dep)
             evaluateLogbackAction(conf, dep)
         }
     }
     tasks.withType(Test).each { testTask ->
-        testngEnabledAction(testTask)
         logbackEnabledAction(testTask)
     }
 }
