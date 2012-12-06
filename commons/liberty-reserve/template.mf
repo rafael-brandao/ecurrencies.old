@@ -1,3 +1,5 @@
 Import-Template: 
  ecurrencies.*;version="${bundleVersion}",
+ groovy.*;version="${groovyVersion:[=.=.=, =.+1.0)}",
+ org.codehaus.groovy.*;version="${groovyVersion:[=.=.=, =.+1.0)}",
  org.joda.time.*;version="${jodaTimeVersion:[=.=, +1)}"
