@@ -1,0 +1,66 @@
+package ecurrencies
+
+import scala.collection.mutable.MutableList
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration.DurationLong
+import scala.language.postfixOps
+
+import akka.actor.{ ActorRef, ActorSystem, Props }
+import akka.kernel.Bootable
+import akka.pattern.{ AskTimeoutException, gracefulStop }
+
+import com.typesafe.config.ConfigFactory
+
+import ecurrencies.libertyreserve.service.LibertyReserveSupervisor
+import ecurrencies.service.amqp.AmqpSupervisor
+
+class Application extends Bootable {
+
+  implicit val system = ActorSystem()
+  import system.dispatcher
+  import Settings._
+
+  private val ecurrencyActors = MutableList.empty[ ActorRef ]
+  private var amqpSupervisor: ActorRef = _
+
+  def startup {
+    ecurrencyActors += system.actorOf( Props[ LibertyReserveSupervisor ], "liberty-reserve" )
+    amqpSupervisor = system.actorOf( Props[ AmqpSupervisor ] )
+  }
+
+  def shutdown {
+    import system.log
+
+    try {
+      Await.ready(
+        Future {
+          shutdownEcurrencies
+          shutdownAmqp
+        }, `system-shutdown-timeout` )
+    } catch {
+      case t: AskTimeoutException =>
+        log.error( "Could not shutdown system in " + `system-shutdown-timeout`, t )
+    }
+    system.shutdown
+  }
+
+  private def shutdownEcurrencies() {
+    val stopped = ecurrencyActors.map( gracefulStop( _, `actor-shutdown-timeout` ) )
+    Await.ready( Future.sequence( stopped ), `actor-shutdown-timeout` )
+  }
+
+  private def shutdownAmqp() {
+    Await.ready( gracefulStop( amqpSupervisor, `actor-shutdown-timeout` ), `actor-shutdown-timeout` )
+  }
+
+  private object Settings {
+    val config = system.settings.config
+    config.checkValid( ConfigFactory.defaultReference(), "ecurrencies" )
+
+    val `actor-shutdown-timeout` =
+      config.getMilliseconds( "ecurrencies.actor-shutdown-timeout" ).asInstanceOf[ Long ] milliseconds
+    val `system-shutdown-timeout` =
+      config.getMilliseconds( "ecurrencies.system-shutdown-timeout" ).asInstanceOf[ Long ] milliseconds
+  }
+
+}

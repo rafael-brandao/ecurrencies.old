@@ -1,0 +1,6 @@
+dependencies {
+	compile project(':api'),
+			"${akkaGroup}:akka-actor_${akkaScalaVersion}:${akkaVersion}",
+			"${protobufGroup}:protobuf-java:${protobufVersion}",
+			"${rabbitmqGroup}:amqp-client:${rabbitmqVersion}"
+}

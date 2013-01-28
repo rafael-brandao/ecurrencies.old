@@ -1,0 +1,25 @@
+rootProject.name = 'ecurrencies'
+
+// API
+include 'api'
+
+// Services
+include 'service:amqp'
+
+// Commons
+include 'common:akka'
+
+// Application
+include 'application'
+
+// Distribution
+include 'distribution'
+
+// Providers
+
+// Liberty Reserve
+include 'provider:liberty-reserve:client'
+include 'provider:liberty-reserve:domain'
+include 'provider:liberty-reserve:service'
+include 'provider:liberty-reserve:test-util'
+include 'provider:liberty-reserve:util'

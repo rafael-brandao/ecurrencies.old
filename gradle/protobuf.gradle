@@ -1,0 +1,37 @@
+task protobuf(type:Exec, group: 'build') {
+
+    description = "Produces java code from protocol buffer domain specifications"
+
+    def protoFile = file("${projectDir}/domain.proto")
+    def descriptorFile = file("${project.ext.protobufResourcesOutputDir}/domain.descriptor")
+
+    // incremental build configuration
+    //   compileProtobuf task will be skipped *unless* any of the following are true
+    //   * domain.proto has been changed
+    //   * main classpath dependencies have been changed
+    //   * main java sources for this project have been modified
+    outputs.dir project.ext.protobufOutputDir
+    outputs.files descriptorFile
+    inputs.files protoFile
+
+    dependencies { compile "${protobufGroup}:protobuf-java:${protobufVersion}" }
+
+    project.compileJava { dependsOn protobuf }
+
+    doFirst {
+        if (!project.ext.protobufJavaOutputDir.isDirectory())
+            project.ext.protobufJavaOutputDir.mkdirs()
+
+        if (!project.ext.protobufResourcesOutputDir.isDirectory())
+            project.ext.protobufResourcesOutputDir.mkdirs()
+
+        logging.captureStandardOutput(LogLevel.INFO)
+
+        executable "protoc"
+        args "-I=${projectDir}",
+                "--descriptor_set_out=${descriptorFile}",
+                "--java_out=${project.ext.protobufJavaOutputDir}",
+                "${protoFile}"
+    }
+
+}

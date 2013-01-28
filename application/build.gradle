@@ -1,0 +1,7 @@
+dependencies {
+	compile "${akkaGroup}:akka-actor_${akkaScalaVersion}:${akkaVersion}",
+			"${akkaGroup}:akka-kernel_${akkaScalaVersion}:${akkaVersion}"
+
+	compile project(':provider:liberty-reserve:service'),
+			project(':service:amqp')
+}

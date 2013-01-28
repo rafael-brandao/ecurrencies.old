@@ -1,0 +1,15 @@
+*.bak
+*.iml
+*.ini
+*.ipr
+*.iws
+.idea
+.cache
+.classpath
+.gradle
+.groovy
+.project
+.settings
+bin
+build
+gradle-app.setting

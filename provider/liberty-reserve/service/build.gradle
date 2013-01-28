@@ -1,0 +1,12 @@
+dependencies {
+	compile project(':common:akka'),
+			project(':provider:liberty-reserve:domain'),
+			"${akkaGroup}:akka-actor_${akkaScalaVersion}:${akkaVersion}",
+			"${jodaConvertGroup}:joda-convert:${jodaConvertVersion}",
+			"${jodaTimeGroup}:joda-time:${jodaTimeVersion}",
+			"${sprayGroup}:spray-client:${sprayVersion}",
+			"${sprayGroup}:spray-json_${sprayScalaVersion}:${sprayJsonVersion}"
+
+	testCompile	project(':provider:liberty-reserve:test-util'),
+				"${akkaGroup}:akka-testkit_${akkaScalaVersion}:${akkaVersion}"
+}

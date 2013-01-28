@@ -1,0 +1,5 @@
+Import-Template: 
+ akka.*;version="${akkaVersion:[=.=.=, =.=.+1)}",
+ com.google.protobuf.*;version="${protobufVersion:[=.=.=, +1)}",
+ ecurrencies.*;version="${bundleVersion}",
+ scala.*;version="${scalaVersion:[=.=.=, =.=.+1)}"
