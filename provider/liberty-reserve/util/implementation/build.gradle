@@ -1,7 +1,0 @@
-dependencies {
-    compile project(":provider:liberty-reserve:util:api")
-    compile "${jodaTimeGroup}:joda-time:${jodaTimeVersion}"
-    compile "${springIntegrationGroup}:spring-integration-amqp:${springIntegrationVersion}"
-    testCompile "${springGroup}:spring-test:${springVersion}"
-    testRuntime "${logbackGroup}:logback-classic:${logbackVersion}"
-}

@@ -1,9 +1,0 @@
-Excluded-Exports:
- *
-Import-Template:
- ecurrencies.*;version="${bundleVersion}",
- org.joda.time.*;version="${jodaTimeVersion:[=.=, +1)}",
- org.springframework.*;version="${springVersion:[=.=.=, +1)}"
-Import-Package: 
- org.springframework.beans.factory;version="${springVersion:[=.=.=, +1)}",
- org.springframework.stereotype;version="${springVersion:[=.=.=, +1)}"

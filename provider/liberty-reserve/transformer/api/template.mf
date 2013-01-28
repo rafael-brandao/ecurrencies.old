@@ -1,2 +1,0 @@
-Import-Template: 
- com.google.protobuf.*;version="${protobufVersion:[=.=.=, +1)}"

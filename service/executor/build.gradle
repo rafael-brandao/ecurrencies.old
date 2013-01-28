@@ -1,5 +1,0 @@
-dependencies {
-    compile "${springGroup}:spring-context:${springVersion}"
-    compile "${slf4jGroup}:slf4j-api:${slf4jVersion}"
-    testCompile "${springGroup}:spring-test:${springVersion}"
-}

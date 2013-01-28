@@ -1,3 +1,0 @@
-dependencies {
-    compile "${springIntegrationGroup}:spring-integration-core:${springIntegrationVersion}"
-}

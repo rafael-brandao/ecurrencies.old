@@ -1,3 +1,0 @@
-dependencies { 
-    compile "${protobufGroup}:com.google.protobuf.java:${protobufVersion}" 
-}

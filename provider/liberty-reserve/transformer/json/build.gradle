@@ -1,3 +1,0 @@
-ext {
-    artifactId = 'liberty-reserve-provider-json-transformer'
-}

@@ -1,3 +1,0 @@
-Import-Template: 
- groovy.*;version="${groovyVersion:[=.=.=, =.+1.0)}",
- org.codehaus.groovy.*;version="${groovyVersion:[=.=.=, =.+1.0)}"
