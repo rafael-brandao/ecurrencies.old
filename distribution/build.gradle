@@ -16,7 +16,7 @@ ext {
     deployDir = "$outputDir/deploy"
     libDir = "$outputDir/lib"
     akkaLibDir = "$libDir/akka"
-    scriptsInputDir = "$srcDir/bin"
+    scriptsInputDir = "$srcDir/init-scripts"
     scriptsOutputDir = "$outputDir/bin"
 }
 
