@@ -1,23 +1,23 @@
 apply plugin: 'java'
 
 ext {
-	JAVA_OPTS = '-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=256M -XX:+UseParallelGC'
+    JAVA_OPTS = '-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=256M -XX:+UseParallelGC'
 
-	if(!project.hasProperty('env')) {
-		env = 'default'
-	}
+    if(!project.hasProperty('env')) {
+        env = 'default'
+    }
 
-	srcDir = "${projectDir.path}/src"
-	outputDir = "${buildDir.path}/dist/$env"
+    srcDir = "${projectDir.path}/src"
+    outputDir = "${buildDir.path}/dist/$env"
 
-	configFileName = "application.${env}.conf"
-	configFile = "$srcDir/config/$configFileName"
-	configOutputDir = "$outputDir/config"
-	deployDir = "$outputDir/deploy"
-	libDir = "$outputDir/lib"
-	akkaLibDir = "$libDir/akka"
-	scriptsInputDir = "$srcDir/bin"
-	scriptsOutputDir = "$outputDir/bin"
+    configFileName = "application.${env}.conf"
+    configFile = "$srcDir/config/$configFileName"
+    configOutputDir = "$outputDir/config"
+    deployDir = "$outputDir/deploy"
+    libDir = "$outputDir/lib"
+    akkaLibDir = "$libDir/akka"
+    scriptsInputDir = "$srcDir/bin"
+    scriptsOutputDir = "$outputDir/bin"
 }
 
 dependencies { compile project(':application') }
@@ -27,41 +27,41 @@ configurations.all*.exclude group: 'org.parboiled' , module : 'parboiled-scala_2
 jar.enabled = false
 
 task generateConfig(type: Copy){
-	def configFile = file(project.ext.configFile)
-	from configFile
-	into configOutputDir
-	rename(configFile.name, "application.conf")
+    def configFile = file(project.ext.configFile)
+    from configFile
+    into configOutputDir
+    rename(configFile.name, "application.conf")
 }
 
 task generateScripts(type:Copy) {
-	from scriptsInputDir
-	into scriptsOutputDir
+    from scriptsInputDir
+    into scriptsOutputDir
 }
 
 task distribution {
-	dependsOn clean
-	dependsOn generateConfig
-	dependsOn generateScripts
+    dependsOn clean
+    dependsOn generateConfig
+    dependsOn generateScripts
 
-	build.dependsOn distribution
-	
-	doLast {
-		configurations.compile.files.each { file ->
-			if(file.name =~ /ecurrencies-application/)
-				copy {
-					from file
-					into deployDir
-				}
-			else if(file.name =~ /scala-library/)
-				copy {
-					from file
-					into libDir
-				}
-			else
-				copy {
-					from file
-					into akkaLibDir
-				}
-		}
-	}
+    build.dependsOn distribution
+
+    doLast {
+        configurations.compile.files.each { file ->
+            if(file.name =~ /ecurrencies-application/)
+                copy {
+                    from file
+                    into deployDir
+                }
+            else if(file.name =~ /scala-library/)
+                copy {
+                    from file
+                    into libDir
+                }
+            else
+                copy {
+                    from file
+                    into akkaLibDir
+                }
+        }
+    }
 }

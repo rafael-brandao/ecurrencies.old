@@ -1,7 +1,7 @@
 dependencies {
-	compile project(':api'),
-			"${akkaGroup}:akka-actor_${akkaScalaVersion}:${akkaVersion}",
-			"${protobufGroup}:protobuf-java:${protobufVersion}"
+    compile project(':api'),
+            "${akkaGroup}:akka-actor_${akkaScalaVersion}:${akkaVersion}",
+            "${protobufGroup}:protobuf-java:${protobufVersion}"
 
-	testCompile "${akkaGroup}:akka-testkit_${akkaScalaVersion}:${akkaVersion}"
+    testCompile "${akkaGroup}:akka-testkit_${akkaScalaVersion}:${akkaVersion}"
 }

@@ -1,148 +1,148 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 
 buildscript {
-	repositories { mavenRepo url: 'http://repo.springsource.org/plugins-release' }
-	dependencies { classpath("org.springframework.build.gradle:propdeps-plugin:0.0.2") }
+    repositories { mavenRepo url: 'http://repo.springsource.org/plugins-release' }
+    dependencies { classpath("org.springframework.build.gradle:propdeps-plugin:0.0.2") }
 }
 
 ext {
-	jvm = org.gradle.internal.jvm.Jvm.current()
-	javaVersion = JavaVersion.current()
-	assert javaVersion.java7 : "Must use a Java 7 compatible JVM to perform this build. Current JVM is ${jvm}"
+    jvm = org.gradle.internal.jvm.Jvm.current()
+    javaVersion = JavaVersion.current()
+    assert javaVersion.java7 : "Must use a Java 7 compatible JVM to perform this build. Current JVM is ${jvm}"
 
-	protobufProjects = []
-	javaProjects = []
-	scalaProjects = []
+    protobufProjects = []
+    javaProjects = []
+    scalaProjects = []
 
-	apply from: "$rootDir/gradle/subprojects.gradle"
+    apply from: "$rootDir/gradle/subprojects.gradle"
 }
 
 allprojects {
 
-	version = rootProject.version
+    version = rootProject.version
 
-	ext {
-		versionBindings = project.ext.properties.findAll{ it.key ==~ /^[\w]+Version$/ }
-	}
+    ext {
+        versionBindings = project.ext.properties.findAll{ it.key ==~ /^[\w]+Version$/ }
+    }
 
-	apply from: "$rootDir/gradle/naming.gradle"
-	apply plugin: 'eclipse'
+    apply from: "$rootDir/gradle/naming.gradle"
+    apply plugin: 'eclipse'
 
-	afterEvaluate {
-		eclipse.project.name = artifactId
-	}
-	repositories {
-		mavenCentral()
-		mavenRepo url: 'https://oss.sonatype.org/content/groups/public/'
-		mavenRepo url: 'http://repo.spray.io/'
-	}
-	configurations.all*.resolutionStrategy { force "${scalaGroup}:scala-library:${scalaVersion}" }
+    afterEvaluate {
+        eclipse.project.name = artifactId
+    }
+    repositories {
+        mavenCentral()
+        mavenRepo url: 'https://oss.sonatype.org/content/groups/public/'
+        mavenRepo url: 'http://repo.spray.io/'
+    }
+    configurations.all*.resolutionStrategy { force "${scalaGroup}:scala-library:${scalaVersion}" }
 
-	afterEvaluate {
-		tasks.withType(Copy) {
-			filter(ReplaceTokens, tokens: project.ext.properties)
-		}
-	}
+    afterEvaluate {
+        tasks.withType(Copy) {
+            filter(ReplaceTokens, tokens: project.ext.properties)
+        }
+    }
 }
 
 configure(javaProjects) {
-	apply plugin: 'java'
+    apply plugin: 'java'
 
-	sourceCompatibility = javaVersion
-	targetCompatibility = javaVersion
+    sourceCompatibility = javaVersion
+    targetCompatibility = javaVersion
 
-	jar {
-		manifest.attributes << ['Implementation-Title':artifactId]
-		manifest.attributes << ['Implementation-Version':version]
+    jar {
+        manifest.attributes << ['Implementation-Title':artifactId]
+        manifest.attributes << ['Implementation-Version':version]
 
-		from("$rootDir/src/dist") {
-			include "license.txt"
-			include "notice.txt"
-			into "META-INF"
-			expand(copyright: new Date().format('yyyy'), version: version)
-		}
-	}
+        from("$rootDir/src/dist") {
+            include "license.txt"
+            include "notice.txt"
+            into "META-INF"
+            expand(copyright: new Date().format('yyyy'), version: version)
+        }
+    }
 
-	dependencies { testCompile "${junitGroup}:junit:${junitVersion}" }
+    dependencies { testCompile "${junitGroup}:junit:${junitVersion}" }
 
-	test {
-		enableAssertions = true
-		jvmArgs '-Xms256m', '-Xmx512m'
-		testLogging {
-			minGranularity = 3
-			showStandardStreams = true
-			exceptionFormat 'full'
-			events 'failed'
-			info.events 'passed'
-			debug.events 'started'
-			stackTraceFilters 'groovy', 'entry_point', 'truncate'
-		}
-	}
+    test {
+        enableAssertions = true
+        jvmArgs '-Xms256m', '-Xmx512m'
+        testLogging {
+            minGranularity = 3
+            showStandardStreams = true
+            exceptionFormat 'full'
+            events 'failed'
+            info.events 'passed'
+            debug.events 'started'
+            stackTraceFilters 'groovy', 'entry_point', 'truncate'
+        }
+    }
 
-	task sourcesJar(type: Jar, dependsOn:classes) {
-		classifier = "sources"
-		from sourceSets.main.allSource.srcDirs
-	}
+    task sourcesJar(type: Jar, dependsOn:classes) {
+        classifier = "sources"
+        from sourceSets.main.allSource.srcDirs
+    }
 
-	artifacts { archives sourcesJar }
+    artifacts { archives sourcesJar }
 
-	tasks.withType(JavaCompile) {
-		it.options.encoding = 'UTF-8'
-	}
+    tasks.withType(JavaCompile) {
+        it.options.encoding = 'UTF-8'
+    }
 
-	// Enable filtering versions in resources
-	/*configure(tasks.findAll{ it.name ==~ /^process(Test|)Resources$/}) {
-	 filter(ReplaceTokens, tokens: project.ext.versionBindings)
-	 }*/
+    // Enable filtering versions in resources
+    /*configure(tasks.findAll{ it.name ==~ /^process(Test|)Resources$/}) {
+     filter(ReplaceTokens, tokens: project.ext.versionBindings)
+     }*/
 
 
-	afterEvaluate { archivesBaseName = artifactId }
+    afterEvaluate { archivesBaseName = artifactId }
 }
 
 configure(protobufProjects) {
-	ext {
-		protobufOutputDir = file("${project.buildDir}/protobuf")
-		protobufJavaOutputDir = file("${protobufOutputDir}/java")
-		protobufResourcesOutputDir = file("${protobufOutputDir}/resources")
-	}
+    ext {
+        protobufOutputDir = file("${project.buildDir}/protobuf")
+        protobufJavaOutputDir = file("${protobufOutputDir}/java")
+        protobufResourcesOutputDir = file("${protobufOutputDir}/resources")
+    }
 
 
-	sourceSets {
-		main {
-			java { srcDirs += "${protobufOutputDir}/java" }
-			resources { srcDirs += "${protobufOutputDir}/resources" }
-		}
-	}
+    sourceSets {
+        main {
+            java { srcDirs += "${protobufOutputDir}/java" }
+            resources { srcDirs += "${protobufOutputDir}/resources" }
+        }
+    }
 
 
-	apply from: "$rootDir/gradle/protobuf.gradle"
+    apply from: "$rootDir/gradle/protobuf.gradle"
 }
 
 configure(scalaProjects) {
-	apply plugin: 'scala'
+    apply plugin: 'scala'
 
-	dependencies {
-		compile    "$scalaGroup:scala-library:$scalaVersion"
-		scalaTools "$scalaGroup:scala-compiler:$scalaVersion"
-		testCompile "${scalaTestGroup}:scalatest_${scalaVersion}:${scalaTestVersion}",
-				"${junitGroup}:junit:${junitVersion}"
-	}
+    dependencies {
+        compile    "$scalaGroup:scala-library:$scalaVersion"
+        scalaTools "$scalaGroup:scala-compiler:$scalaVersion"
+        testCompile "${scalaTestGroup}:scalatest_${scalaVersion}:${scalaTestVersion}",
+                "${junitGroup}:junit:${junitVersion}"
+    }
 
-	tasks.withType(ScalaCompile).each {
-		it.options.encoding = 'UTF-8'
-		it.scalaCompileOptions.with {
-			encoding = 'UTF-8'
-			useAnt   = false
-		}
-	}
+    tasks.withType(ScalaCompile).each {
+        it.options.encoding = 'UTF-8'
+        it.scalaCompileOptions.with {
+            encoding = 'UTF-8'
+            useAnt   = false
+        }
+    }
 }
 
 configure(javaProjects - protobufProjects) {
-	def javaCompileTasks = tasks.withType(JavaCompile)
-	def scalaCompileTasks = tasks.withType(ScalaCompile)
+    def javaCompileTasks = tasks.withType(JavaCompile)
+    def scalaCompileTasks = tasks.withType(ScalaCompile)
 
-	(javaCompileTasks + scalaCompileTasks).each {
-		it.options.compilerArgs = ['-Xlint:all', '-Werror']}
+    (javaCompileTasks + scalaCompileTasks).each {
+        it.options.compilerArgs = ['-Xlint:all', '-Werror']}
 }
 
 
