@@ -1,43 +1,38 @@
 ext {
-	javaMarkup = [
-		'src/main/java',
-		'src/main/resources',
-		'src/test/java',
-		'src/test/resources'
-	]
-	scalaMarkup = [
-		'src/main/scala',
-		'src/test/scala'
-	]
-	protobufMarkup = /^.+\.proto$/
+    javaMarkup = [
+        'src/main/java',
+        'src/main/resources',
+        'src/test/java',
+        'src/test/resources'
+    ]
+    scalaMarkup = [
+        'src/main/scala',
+        'src/test/scala'
+    ]
+    protobufMarkup = /^.+\.proto$/
+    distributionMarkup = 'src/dist'
 }
 
 def anySubdirectoryExists(project, list) {
-	list.any {
-		file("${project.projectDir}/${it}").isDirectory()
-	}
-}
-
-def isScalaProject(project) {
-	anySubdirectoryExists(project, scalaMarkup )
-}
-
-def isJavaProject(project) {
-	anySubdirectoryExists(project, javaMarkup )
+    list.any {
+        file("${project.projectDir}/${it}").isDirectory()
+    }
 }
 
 subprojects.findAll {
-	it.childProjects.size() == 0
+    it.childProjects.size() == 0
 }.each {
-	def protobufFiles = it.projectDir.listFiles({ f ->f ==~ protobufMarkup } as FileFilter).toList()
-	def protobufProject = protobufFiles.size() > 0
-	def scalaProject = isScalaProject(it)
-	def javaProject = 	isJavaProject(it) || protobufProject || scalaProject
+    def protobufFiles = it.projectDir.listFiles({ f ->f ==~ protobufMarkup } as FileFilter).toList()
+    def isProtobufProject = protobufFiles.size() > 0
+    def isDistributionProject = anySubdirectoryExists(it, distributionMarkup )
+    def isScalaProject = anySubdirectoryExists(it, scalaMarkup )
+    def isJavaProject = anySubdirectoryExists(it, javaMarkup ) || isProtobufProject || isScalaProject || isDistributionProject
 
-	if(protobufProject) {
-		protobufProjects.push it
-		it.ext.protobufFiles = protobufFiles
-	}
-	if(scalaProject) scalaProjects.push it
-	if(javaProject ) javaProjects.push it
+    if(isProtobufProject) {
+        protobufProjects.push it
+        it.ext.protobufFiles = protobufFiles
+    }
+    if(isDistributionProject) distributionProjects.push it
+    if(isScalaProject) scalaProjects.push it
+    if(isJavaProject ) javaProjects.push it
 }

@@ -14,6 +14,8 @@ ext {
     javaProjects = []
     scalaProjects = []
 
+    distributionProjects = []
+
     apply from: "$rootDir/gradle/subprojects.gradle"
 }
 
@@ -90,12 +92,6 @@ configure(javaProjects) {
         it.options.encoding = 'UTF-8'
     }
 
-    // Enable filtering versions in resources
-    /*configure(tasks.findAll{ it.name ==~ /^process(Test|)Resources$/}) {
-     filter(ReplaceTokens, tokens: project.ext.versionBindings)
-     }*/
-
-
     afterEvaluate { archivesBaseName = artifactId }
 }
 
@@ -142,89 +138,80 @@ configure(javaProjects - protobufProjects) {
     def scalaCompileTasks = tasks.withType(ScalaCompile)
 
     (javaCompileTasks + scalaCompileTasks).each {
-        it.options.compilerArgs = ['-Xlint:all', '-Werror']}
+        it.options.compilerArgs = ['-Xlint:all', '-Werror']
+    }
 }
 
+configure(distributionProjects) {
 
-/*subprojects {
- def protobufFiles = projectDir.listFiles({f ->f ==~ /^.+\.proto$/ } as FileFilter).toList()
- def protobufProject = protobufFiles.size() > 0
- version = rootProject.version
- apply plugin: 'scala'
- sourceCompatibility = javaVersion
- targetCompatibility = javaVersion
- jar {
- manifest.attributes << ['Implementation-Title':artifactId]
- manifest.attributes << ['Implementation-Version':version]
- from("$rootDir/src/dist") {
- include "license.txt"
- include "notice.txt"
- into "META-INF"
- expand(copyright: new Date().format('yyyy'), version: version)
- }
- }
- test {
- dependencies {
- compile    "$scalaGroup:scala-library:$scalaVersion"
- scalaTools "$scalaGroup:scala-compiler:$scalaVersion"
- testCompile "${scalaTestGroup}:scalatest_${scalaVersion}:${scalaTestVersion}",
- "${junitGroup}:junit:${junitVersion}"
- }
- enableAssertions = true
- jvmArgs '-Xms256m', '-Xmx512m'
- testLogging {
- minGranularity = 3
- showStandardStreams = true
- exceptionFormat 'full'
- events 'failed'
- info.events 'passed'
- debug.events 'started'
- stackTraceFilters 'groovy', 'entry_point', 'truncate'
- }
- }
- test {
- dependencies { testCompile  "${scalaTestGroup}:scalatest_${scalaVersion}:${scalaTestVersion}" }
- doLast {
- ant.taskdef( name: 'scalatest',
- classname: 'org.scalatest.tools.ScalaTestAntTask',
- classpath: sourceSets.test.runtimeClasspath.asPath)
- ant.scalatest(runpath: sourceSets.test.output.classesDir, haltonfailure: 'true',
- fork: 'false') {
- reporter(type: 'stdout')
- // reporter(type: 'html', directory: "$testReportDir/scalatest")
- }
- }
- }
- task sourcesJar(type: Jar, dependsOn:classes) {
- classifier = "sources"
- from sourceSets.main.allSource.srcDirs
- }
- artifacts { archives sourcesJar }
- if(protobufProject) {
- ext.protobufFiles = protobufFiles
- apply from: "$rootDir/gradle/protobuf.gradle"
- }
- afterEvaluate {
- archivesBaseName = artifactId
- def javaCompileTasks = tasks.withType(JavaCompile)
- def scalaCompileTasks = tasks.withType(ScalaCompile)
- def processResourceTasks = tasks.findAll{ it.name ==~ /^process(Test|)Resources$/}
- (javaCompileTasks + scalaCompileTasks).each {
- it.options.with {
- encoding = 'UTF-8'
- if(!protobufProject)
- compilerArgs = ['-Xlint:all', '-Werror']
- }
- }
- scalaCompileTasks.each {
- it.scalaCompileOptions.with {
- encoding = 'UTF-8'
- useAnt   = false
- }
- }
- // Enable filtering versions in resources
- configure(processResourceTasks) {
- filter(ReplaceTokens, tokens: project.ext.versionBindings)
- }
- }
- }*/
+    ext {
+
+        JAVA_OPTS = '-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=256M -XX:+UseParallelGC'
+
+        if(!project.hasProperty('env'))
+            env = 'default'
+
+        srcDir = "${projectDir.path}/src/akka/dist"
+        outputDir = "${buildDir.path}/akka/dist/$env"
+
+        configFileName = "application.${env}.conf"
+        configFile = "$srcDir/config/$configFileName"
+        configOutputDir = "$outputDir/config"
+        deployDir = "$outputDir/deploy"
+        libDir = "$outputDir/lib"
+        akkaLibDir = "$libDir/akka"
+        scriptsInputDir = "$srcDir/init-scripts"
+        scriptsOutputDir = "$outputDir/bin"
+
+        deployFilters = []
+    }
+
+    configurations.all*.exclude group: 'org.parboiled' , module : 'parboiled-scala_2.10.0-RC5'
+
+    task generateConfig(type: Copy){
+        def configFile = file(project.ext.configFile)
+        from configFile
+        into configOutputDir
+        rename(configFile.name, "application.conf")
+    }
+
+    task generateScripts(type:Copy) {
+        from scriptsInputDir
+        into scriptsOutputDir
+    }
+
+    task distribution {
+        dependsOn generateConfig
+        dependsOn generateScripts
+
+        build.dependsOn distribution
+
+        doLast {
+            def deployed
+            configurations.compile.files.each { file ->
+                deployed = false
+                deployFilters.each {
+                    if(file.name =~ it) {
+                        copy {
+                            from file
+                            into deployDir
+                        }
+                        deployed = true
+                    }
+                }
+                if(deployed) return
+
+                if(file.name =~ /scala-library/)
+                    copy {
+                        from file
+                        into libDir
+                    }
+                else
+                    copy {
+                        from file
+                        into akkaLibDir
+                    }
+            }
+        }
+    }
+}
