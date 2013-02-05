@@ -305,17 +305,18 @@ object LibertyReserveGenerator {
       .asInstanceOf[ B ]
   }
 
-  def create[ M <: GeneratedMessage: TypeTag ](): M = typeOf[ M ] match {
-    case m if m =:= typeOf[ AccountNameRequest ] => accountNameRequest.asInstanceOf[ M ]
-    case m if m =:= typeOf[ BalanceRequest ] => balanceRequest.asInstanceOf[ M ]
-    case m if m =:= typeOf[ FindTransactionRequest ] => findTransactionRequest.asInstanceOf[ M ]
-    case m if m =:= typeOf[ HistoryRequest ] => historyRequest.asInstanceOf[ M ]
-    case m if m =:= typeOf[ TransferRequest ] => transferRequest.asInstanceOf[ M ]
-    case m if m =:= typeOf[ AccountNameResponse ] => accountNameResponse.asInstanceOf[ M ]
-    case m if m =:= typeOf[ BalanceResponse ] => balanceResponse.asInstanceOf[ M ]
-    case m if m =:= typeOf[ HistoryResponse ] => historyResponse().asInstanceOf[ M ]
-    case m if m =:= typeOf[ TransactionResponse ] => transactionResponse.asInstanceOf[ M ]
-    case _ => throw new IllegalArgumentException( typeOf[ M ] + " is not a valid LibertyReserve API message." )
-  }
+  def create[ M <: GeneratedMessage: TypeTag ](): M =
+    typeOf[ M ] match {
+      case m if m =:= typeOf[ AccountNameRequest ] => accountNameRequest.asInstanceOf[ M ]
+      case m if m =:= typeOf[ BalanceRequest ] => balanceRequest.asInstanceOf[ M ]
+      case m if m =:= typeOf[ FindTransactionRequest ] => findTransactionRequest.asInstanceOf[ M ]
+      case m if m =:= typeOf[ HistoryRequest ] => historyRequest.asInstanceOf[ M ]
+      case m if m =:= typeOf[ TransferRequest ] => transferRequest.asInstanceOf[ M ]
+      case m if m =:= typeOf[ AccountNameResponse ] => accountNameResponse.asInstanceOf[ M ]
+      case m if m =:= typeOf[ BalanceResponse ] => balanceResponse.asInstanceOf[ M ]
+      case m if m =:= typeOf[ HistoryResponse ] => historyResponse().asInstanceOf[ M ]
+      case m if m =:= typeOf[ TransactionResponse ] => transactionResponse.asInstanceOf[ M ]
+      case _ => throw new IllegalArgumentException( typeOf[ M ] + " is not a valid LibertyReserve API message." )
+    }
 
 }
