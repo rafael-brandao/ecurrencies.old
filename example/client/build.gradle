@@ -1,0 +1,14 @@
+dependencies {
+    compile project(':provider:liberty-reserve:test-util'),
+            "${akkaGroup}:akka-actor_${akkaScalaVersion}:${akkaVersion}",
+            "${akkaGroup}:akka-kernel_${akkaScalaVersion}:${akkaVersion}",
+            "${protobufGroup}:protobuf-java:${protobufVersion}",
+            "${rabbitmqGroup}:amqp-client:${rabbitmqVersion}"
+}
+
+distribution << {
+    copy {
+        from file("$libsDir/$archivesBaseName-${version}.jar")
+        into deployDir
+    }
+}
