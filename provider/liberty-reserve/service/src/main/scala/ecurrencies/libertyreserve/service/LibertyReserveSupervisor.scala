@@ -47,24 +47,23 @@ class LibertyReserveSupervisor extends Actor {
   val historyParser = parser[ HistoryRequest ]( "history", historyHttp )
 
   val transferHttp = httpActor[ TransferRequest, TransactionResponse ]( `api.transfer-uri` )
-  val transferActor = actorOf { () => new TransferActor( transferHttp, historyHttp ) }
+  val transferActor = actorOf { new TransferActor( transferHttp, historyHttp ) }
   val transferParser = parser[ TransferRequest ]( "transfer", transferActor )
 
   private def httpActor[ Request <: GeneratedMessage: ClassTag, Response <: GeneratedMessage: ClassTag ](
     uri: String )( implicit marshaller: Marshaller[ Request ], unmarshaller: Unmarshaller[ Response ] ) = {
-    actorOf[ Request ] { () => HttpService[ Request, Response ]( uri ) }
+    actorOf[ Request ] { HttpService[ Request, Response ]( uri ) }
   }
 
   private def parser[ Request <: GeneratedMessage: ClassTag ]( name: String, next: ActorRef ) = {
     implicit val n = Some( name )
-    actorOf[ Request ] { () => ProtobuffParser[ Request ]( next ) }
+    actorOf[ Request ] { ProtobuffParser[ Request ]( next ) }
   }
 
-  private def actorOf[ Request <: GeneratedMessage: ClassTag ]( f: () => Actor )( implicit name: Option[ String ] = None ) = {
-    val props = Props( f() ).withDispatcher( `liberty-reserve-dispatcher-id` )
+  private def actorOf[ Request <: GeneratedMessage: ClassTag ]( f: => Actor )( implicit name: Option[ String ] = None ) = {
     name match {
-      case Some( name ) => context.actorOf( props.withRouter( router ), name )
-      case None         => context.actorOf( props.withRouter( router ) )
+      case Some( name ) => context.actorOf( Props( f ).withRouter( router ), name )
+      case None         => context.actorOf( Props( f ).withRouter( router ) )
     }
   }
 
