@@ -1,5 +1,7 @@
 package ecurrencies
 
+import java.util.concurrent.TimeoutException
+
 import scala.collection.mutable.MutableList
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.DurationLong
@@ -7,7 +9,7 @@ import scala.language.postfixOps
 
 import akka.actor.{ ActorRef, ActorSystem, Props }
 import akka.kernel.Bootable
-import akka.pattern.{ AskTimeoutException, gracefulStop }
+import akka.pattern.gracefulStop
 
 import com.typesafe.config.ConfigFactory
 
@@ -38,7 +40,7 @@ class Application extends Bootable {
           shutdownAmqp
         }, `system-shutdown-timeout` )
     } catch {
-      case t: AskTimeoutException =>
+      case t: TimeoutException =>
         log.error( "Could not shutdown system in " + `system-shutdown-timeout`, t )
     }
     system.shutdown
