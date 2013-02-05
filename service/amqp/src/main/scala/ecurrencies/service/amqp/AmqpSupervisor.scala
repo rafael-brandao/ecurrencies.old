@@ -3,46 +3,39 @@ package ecurrencies.service.amqp
 import scala.concurrent.duration.DurationLong
 import scala.language.postfixOps
 
-import akka.actor.Actor
-import akka.util.Timeout
+import akka.actor.{ Actor, ActorRef, OneForOneStrategy, PoisonPill, Props, SupervisorStrategy }
 
-import com.rabbitmq.client.{ Channel, ConnectionFactory }
+import com.rabbitmq.client.ConnectionFactory
 
 class AmqpSupervisor extends Actor {
 
   def receive = { case _ => }
 
-  import Settings._
+  import SupervisorStrategy.Restart
   import RabbitMQ._
+  import Settings._
 
-  implicit val consumerTimeout = Timeout( `consumer.timeout` milliseconds )
+  override val supervisorStrategy =
+    OneForOneStrategy( maxNrOfRetries = 10, withinTimeRange = 1 minute ) {
+      case _: Exception => Restart
+    }
 
-  val channelConsumerMap =
+  val consumers =
     ( 0 until `channel.instances` )
-      .map( i => newChannel )
-      .foldLeft( Map.empty[ Channel, AmqpConsumer ] ) {
-        ( map, channel ) =>
-          channel.queueDeclare( `queue.name`, `queue.durable`, `queue.exclusive`, `queue.auto-delete`, null )
-          channel.basicQos( `channel.prefetch-count` )
-          val consumer = AmqpConsumer( channel )
-          channel.basicConsume( `queue.name`, false, consumer )
-          map + ( channel -> consumer )
+      .foldLeft( List.empty[ ActorRef ] ) {
+        ( list, i ) =>
+          context.actorOf( Props( AmqpConsumer( newChannel, `queue.name` ) ) ) :: list
       }.par
 
   override def postStop {
-    try {
-      for ( ( channel, consumer ) <- channelConsumerMap ) {
-        channel.basicCancel( consumer.getConsumerTag )
-        channel.close
-      }
-    } finally {
+    if ( connection ne null )
       connection.close
-    }
   }
 
 }
 
 private[ amqp ] object RabbitMQ {
+
   import Settings._
 
   lazy val connection = {
@@ -55,8 +48,11 @@ private[ amqp ] object RabbitMQ {
     factory.newConnection
   }
 
-  def newChannel() = {
-    connection.createChannel
+  val newChannel = { () =>
+    val channel = connection.createChannel
+    channel.queueDeclare( `queue.name`, `queue.durable`, `queue.exclusive`, `queue.auto-delete`, null )
+    channel.basicQos( `channel.prefetch-count` )
+    channel
   }
 
 }

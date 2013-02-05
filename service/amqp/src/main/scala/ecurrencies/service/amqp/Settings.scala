@@ -1,6 +1,11 @@
 package ecurrencies.service.amqp
 
-import com.typesafe.config.{ Config, ConfigFactory }
+import scala.concurrent.duration.DurationLong
+import scala.language.postfixOps
+
+import akka.util.Timeout
+
+import com.typesafe.config.ConfigFactory
 
 object Settings {
 
@@ -26,4 +31,5 @@ object Settings {
 
   val `consumer.timeout`: Long = getMilliseconds( "amqp-service.consumer.timeout" )
 
+  implicit val consumerTimeout = Timeout( `consumer.timeout` milliseconds )
 }
