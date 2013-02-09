@@ -1,4 +1,7 @@
+import groovy.io.FileType
+
 import org.apache.tools.ant.filters.ReplaceTokens
+import org.apache.tools.ant.taskdefs.condition.Os
 
 buildscript {
     repositories { mavenRepo url: 'http://repo.springsource.org/plugins-release' }
@@ -151,8 +154,8 @@ configure(distributionProjects) {
         if(!project.hasProperty('env'))
             env = 'default'
 
-        srcDir = "${projectDir.path}/src/akka/dist"
-        outputDir = "${buildDir.path}/akka/dist/$env"
+        srcDir = "$projectDir/src/akka/dist"
+        outputDir = "$buildDir/akka/dist/$env"
 
         configFileName = "application.${env}.conf"
         configFile = "$srcDir/config/$configFileName"
@@ -164,25 +167,29 @@ configure(distributionProjects) {
         scriptsOutputDir = "$outputDir/bin"
 
         deployFilters = []
+        deployProjectArchive = true
+
+        bootableClass=""
     }
 
     configurations.all*.exclude group: 'org.parboiled' , module : 'parboiled-scala_2.10.0-RC5'
 
-    task generateConfig(type: Copy){
+    task generateConfig(type: Copy, group:'akka'){
         def configFile = file(project.ext.configFile)
         from configFile
         into configOutputDir
         rename(configFile.name, "application.conf")
     }
 
-    task generateScripts(type:Copy) {
+    task generateScripts(type:Copy, group:'akka') {
         from scriptsInputDir
         into scriptsOutputDir
     }
 
-    task distribution {
-        dependsOn generateConfig
+    task distribution(group:'akka') {
+        dependsOn check
         dependsOn generateScripts
+        dependsOn generateConfig
 
         build.dependsOn distribution
 
@@ -201,16 +208,43 @@ configure(distributionProjects) {
                 }
                 if(deployed) return
 
-                if(file.name =~ /scala-library/)
-                    copy {
-                        from file
-                        into libDir
-                    }
-                else
-                    copy {
-                        from file
-                        into akkaLibDir
-                    }
+                    if(file.name =~ /scala-library/)
+                        copy {
+                            from file
+                            into libDir
+                        }
+                    else
+                        copy {
+                            from file
+                            into akkaLibDir
+                        }
+            }
+            if(deployProjectArchive) {
+                copy {
+                    from file("$libsDir/$archivesBaseName-${version}.jar")
+                    into deployDir
+                }
+            }
+        }
+    }
+
+    task execute(type:Exec, group: 'akka') {
+        dependsOn distribution
+
+        logging.captureStandardOutput(LogLevel.LIFECYCLE)
+
+        doFirst {
+
+            assert project.ext.bootableClass != ""
+            assert file(outputDir).isDirectory()
+
+            workingDir = file(scriptsOutputDir)
+
+            if (Os.isFamily(Os.FAMILY_WINDOWS)) {
+               commandLine 'cmd', '/c', 'start', 'akka.bat', bootableClass
+            }
+            else {
+                throw new GradleException("Non windows env execution is not supported yet")
             }
         }
     }

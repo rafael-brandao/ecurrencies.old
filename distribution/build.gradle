@@ -1,3 +1,4 @@
+bootableClass = 'ecurrencies.Application'
 deployFilters += /ecurrencies-application/
 
 dependencies { compile project(':application') }

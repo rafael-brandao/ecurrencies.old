@@ -6,9 +6,4 @@ dependencies {
             "${rabbitmqGroup}:amqp-client:${rabbitmqVersion}"
 }
 
-distribution << {
-    copy {
-        from file("$libsDir/$archivesBaseName-${version}.jar")
-        into deployDir
-    }
-}
+bootableClass = 'ecurrencies.client.Application'
