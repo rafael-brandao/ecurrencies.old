@@ -167,9 +167,8 @@ configure(distributionProjects) {
         scriptsOutputDir = "$outputDir/bin"
 
         deployFilters = []
-        deployProjectArchive = true
 
-        bootableClass=""
+        bootableClass = ""
     }
 
     configurations.all*.exclude group: 'org.parboiled' , module : 'parboiled-scala_2.10.0-RC5'
@@ -187,6 +186,7 @@ configure(distributionProjects) {
     }
 
     task distribution(group:'akka') {
+
         dependsOn check
         dependsOn generateScripts
         dependsOn generateConfig
@@ -206,30 +206,29 @@ configure(distributionProjects) {
                         deployed = true
                     }
                 }
-                if(deployed) return
+                if(deployed)
+                    return
 
-                    if(file.name =~ /scala-library/)
-                        copy {
-                            from file
-                            into libDir
-                        }
-                    else
-                        copy {
-                            from file
-                            into akkaLibDir
-                        }
+                if(file.name =~ /scala-library/)
+                    copy {
+                        from file
+                        into libDir
+                    }
+                else
+                    copy {
+                        from file
+                        into akkaLibDir
+                    }
             }
-            if(deployProjectArchive) {
-                copy {
-                    from file("$libsDir/$archivesBaseName-${version}.jar")
-                    into deployDir
-                }
+            copy {
+                from file("$libsDir/$archivesBaseName-${version}.jar")
+                into deployDir
             }
         }
     }
 
     task execute(type:Exec, group: 'akka') {
-        dependsOn distribution
+        dependsOn build
 
         logging.captureStandardOutput(LogLevel.LIFECYCLE)
 
@@ -241,7 +240,7 @@ configure(distributionProjects) {
             workingDir = file(scriptsOutputDir)
 
             if (Os.isFamily(Os.FAMILY_WINDOWS)) {
-               commandLine 'cmd', '/c', 'start', 'akka.bat', bootableClass
+                commandLine 'cmd', '/c', 'start', 'akka.bat', bootableClass
             }
             else {
                 throw new GradleException("Non windows env execution is not supported yet")
