@@ -47,32 +47,35 @@ sealed trait AmqpClient extends Actor with ActorLogging {
 
 sealed trait BasicPropertiesBuilder {
 
-  protected def generateProperties( ecurrencyId: String, serviceId: String )(
-    apply: AMQP.BasicProperties.Builder => AMQP.BasicProperties.Builder = ( b => b ) ) = {
+  private val genericProperties = new AMQP.BasicProperties().builder().contentType( "application/x-protobuf" )
 
-    apply( new AMQP.BasicProperties().builder() )
+  protected def generateProperties( apply: AMQP.BasicProperties.Builder => AMQP.BasicProperties.Builder = ( b => b ) ) = {
+
+    apply( genericProperties )
       .messageId( System.currentTimeMillis.toString )
-      .contentType( "application/x-protobuf" )
-      .headers( Map( "ecurrency-id" -> ecurrencyId, "service-id" -> serviceId ) )
       .build()
+  }
+
+  protected def generateRoutingKey( ecurrencyId: String, serviceId: String ) = {
+    ecurrencyId + '.' + serviceId
   }
 
 }
 
 class NonBlockingProducer( val createChannel: () => Channel, val resultAggregator: ActorRef,
-                           routingKey: String, replyQueue: String, val sleepTime: Duration )
+                           exchangeName: String, replyQueue: String, val sleepTime: Duration )
     extends AmqpClient with BasicPropertiesBuilder {
 
   def handleRequest( request: GeneratedMessage, ecurrencyId: String, serviceId: String ) {
-    val properties = generateProperties( ecurrencyId, serviceId )( _.replyTo( replyQueue ) )
-    channel.basicPublish( "", routingKey, properties, request.toByteArray )
+    val properties = generateProperties( _.replyTo( replyQueue ) )
+    channel.basicPublish( exchangeName, generateRoutingKey( ecurrencyId, serviceId ), properties, request.toByteArray )
     resultAggregator ! ProducedMessage
   }
 
 }
 
 class RpcClientProducer(
-  val createChannel: () => Channel, val resultAggregator: ActorRef, routingKey: String, val sleepTime: Duration )(
+  val createChannel: () => Channel, val resultAggregator: ActorRef, exchangeName: String, val sleepTime: Duration )(
     implicit timeout: Duration )
     extends AmqpClient with BasicPropertiesBuilder with ResponseHandler {
 
@@ -87,9 +90,9 @@ class RpcClientProducer(
     val replyQueue = channel.queueDeclare.getQueue
     val consumer = new QueueingConsumer( channel )
 
-    val properties = generateProperties( ecurrencyId, serviceId )( _.correlationId( correlationId ).replyTo( replyQueue ) )
+    val properties = generateProperties( _.correlationId( correlationId ).replyTo( replyQueue ) )
 
-    channel.basicPublish( "", routingKey, properties, request.toByteArray() )
+    channel.basicPublish( exchangeName, generateRoutingKey( ecurrencyId, serviceId ), properties, request.toByteArray() )
     resultAggregator ! ProducedMessage
 
     channel.basicConsume( replyQueue, false, consumer )
@@ -105,10 +108,10 @@ class RpcClientProducer(
           val messageId = responseProperties.getMessageId
           val deliveryTag = envelope.getDeliveryTag
 
-          Option( properties.getCorrelationId ) match {
+          Option( responseProperties.getCorrelationId ) match {
             case Some( responseCorrelationId ) =>
               if ( responseCorrelationId equals correlationId )
-                onDelivery( consumer.getConsumerTag, envelope, properties, body )
+                onDelivery( consumer.getConsumerTag, envelope, responseProperties, body )
               else
                 reject( deliveryTag, messageId ) {
                   log.warning( "{} received a message not matching correlationId -> " +

@@ -59,14 +59,15 @@ private[ amqp ] class AmqpConsumer( createChannel: () => Channel, queue: String 
 
   private def handleDelivery( consumerTag: String, envelope: Envelope, properties: AMQP.BasicProperties, body: Array[ Byte ] ) {
 
-    import envelope.{ getDeliveryTag => deliveryTag }
+    import envelope.{ getDeliveryTag => deliveryTag, getRoutingKey => routingKey }
     import properties.{ getHeaders => headers, getMessageId => messageId }
 
     log.info( "{} received a message. MessageId = {}", id, messageId )
 
     try {
-      val ecurrencyId = headers.get( "ecurrency-id" ).toString()
-      val serviceId = headers.get( "service-id" ).toString()
+      val splitedRountingKey = routingKey.split( "\\." )
+      val ecurrencyId = splitedRountingKey( 0 )
+      val serviceId = splitedRountingKey( 1 )
 
       val serviceActor = actorFor( pathFormat format ( ecurrencyId, serviceId ) )
 
@@ -112,12 +113,11 @@ private[ amqp ] class AmqpConsumer( createChannel: () => Channel, queue: String 
           }
       }
     } catch {
-      case t: NullPointerException =>
+      case t @ ( _: ArrayIndexOutOfBoundsException | _: NullPointerException ) =>
         reject( deliveryTag, messageId ) {
-          log.info( "Message {} did not provide valid 'ecurrency-id' and 'service-id' headers", messageId )
+          log.error( t, "Message {} did not provide valid 'ecurrency-id' and 'service-id' headers", messageId )
         }
     }
-
   }
 
   private def ack( deliveryTag: Long, messageId: String )( closure: => Unit = {} ) {

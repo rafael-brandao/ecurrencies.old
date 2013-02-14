@@ -20,11 +20,8 @@ object Settings {
 
   val `channel.prefetch-count` = getInt( "ecurrencies-client.amqp.channel.prefetch-count" )
 
-  val `producer-queue.name` = getString( "ecurrencies-client.amqp.producer-queue.name" )
-  val `producer-queue.durable` = getBoolean( "ecurrencies-client.amqp.producer-queue.durable" )
-  val `producer-queue.exclusive` = getBoolean( "ecurrencies-client.amqp.producer-queue.exclusive" )
-  val `producer-queue.auto-delete` = getBoolean( "ecurrencies-client.amqp.producer-queue.auto-delete" )
-
+  val `exchange-name` = getString( "ecurrencies-client.amqp.exchange-name" )
+  
   val `consumer-queue.name` = getString( "ecurrencies-client.amqp.consumer-queue.name" )
   val `consumer-queue.durable` = getBoolean( "ecurrencies-client.amqp.consumer-queue.durable" )
   val `consumer-queue.exclusive` = getBoolean( "ecurrencies-client.amqp.consumer-queue.exclusive" )

@@ -70,12 +70,7 @@ object ClientSupervisor {
     }
   }
 
-  val producerChannelFunction =
-    () => newChannel {
-      channel =>
-        channel.queueDeclare( `producer-queue.name`, `producer-queue.durable`, `producer-queue.exclusive`, `producer-queue.auto-delete`, null )
-        channel
-    }
+  val producerChannelFunction = () => newChannel()
 
   val consumerChannelFunction =
     () => newChannel {
@@ -102,7 +97,7 @@ object ClientSupervisor {
 
   def createNonBlockingProducer( resultAggregator: ActorRef )( implicit context: ActorContext ) =
     createActorRef( `non-blocking-producer.instances` ) {
-      new NonBlockingProducer( producerChannelFunction, resultAggregator, `producer-queue.name`, `consumer-queue.name`, producerSleepTime )
+      new NonBlockingProducer( producerChannelFunction, resultAggregator, `exchange-name`, `consumer-queue.name`, producerSleepTime )
     }
 
   def createRpcClientResultAggregator( implicit context: ActorContext ) =
@@ -110,7 +105,7 @@ object ClientSupervisor {
 
   def createRpcClient( resultAggregator: ActorRef )( implicit context: ActorContext ) =
     createActorRef( `rpc-client.instances` ) {
-      new RpcClientProducer( producerChannelFunction, resultAggregator, `producer-queue.name`, producerSleepTime )
+      new RpcClientProducer( producerChannelFunction, resultAggregator, `exchange-name`, producerSleepTime )
     }
 
   private def createActorRef[ T <: Actor ]( instances: Int )( f: => T )( implicit context: ActorContext ) = {

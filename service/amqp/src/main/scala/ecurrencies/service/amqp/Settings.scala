@@ -21,6 +21,14 @@ object Settings {
   val `connection.username` = getString( "amqp-service.connection.username" )
   val `connection.password` = getString( "amqp-service.connection.password" )
 
+  val `exchange.name` = getString( "amqp-service.exchange.name" )
+  val `exchange.type` = getString( "amqp-service.exchange.type" )
+  val `exchange.durable` = getBoolean( "amqp-service.exchange.durable" )
+  val `exchange.auto-delete` = getBoolean( "amqp-service.exchange.auto-delete" )
+  val `exchange.internal` = getBoolean( "amqp-service.exchange.internal" )
+
+  val `binding-key` = getString( "amqp-service.binding-key" )
+
   val `queue.name` = getString( "amqp-service.queue.name" )
   val `queue.durable` = getBoolean( "amqp-service.queue.durable" )
   val `queue.exclusive` = getBoolean( "amqp-service.queue.exclusive" )

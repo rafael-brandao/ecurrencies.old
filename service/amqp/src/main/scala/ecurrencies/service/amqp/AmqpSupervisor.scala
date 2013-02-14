@@ -50,7 +50,9 @@ private[ amqp ] object RabbitMQ {
 
   val newChannel = { () =>
     val channel = connection.createChannel
+    channel.exchangeDeclare( `exchange.name`, `exchange.type`, `exchange.durable`, `exchange.auto-delete`, `exchange.internal`, null )
     channel.queueDeclare( `queue.name`, `queue.durable`, `queue.exclusive`, `queue.auto-delete`, null )
+    channel.queueBind( `queue.name`, `exchange.name`, `binding-key` )
     channel.basicQos( `channel.prefetch-count` )
     channel
   }

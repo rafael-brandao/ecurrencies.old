@@ -30,7 +30,7 @@ trait ResponseHandler {
     import envelope.{ getDeliveryTag => deliveryTag }
     import properties.{ getHeaders => headers, getMessageId => messageId }
 
-    log.debug( "Consumer received a response message -> {}", messageId )
+    log.debug( "{} received a response message -> MessageId: {}", id, messageId )
 
     try {
 
@@ -42,13 +42,13 @@ trait ResponseHandler {
           `liberty-reserve-parsers`.get( serviceId ) match {
             case Some( parse ) =>
               ack( deliveryTag, messageId ) {
-                log.info( "{} processed message id {}\n\n{}\n", id, messageId, parse( body ) )
+                log.info( "{} processed message id {}\nHeaders: {}\nMessage: {}", id, messageId, headers, parse( body ) )
               }
             case None =>
               reject( deliveryTag, messageId ) {
                 log.warning( "{} received an invalid message." +
                   " It did not provide a valid 'service-id'" +
-                  "MessageId : {} - ServiceId : {}", id, messageId, serviceId )
+                  "MessageId: {} - ServiceId: {}", id, messageId, serviceId )
               }
           }
       }
@@ -57,8 +57,8 @@ trait ResponseHandler {
       case t: NullPointerException =>
         reject( deliveryTag, messageId ) {
           log.warning( "{} received an invalid response." +
-            " It did not provide required headers 'ecurrency-id' and 'service-id'" +
-            "MessageId : {}", id, messageId )
+            " It did not provide required headers 'ecurrency-id' and 'service-id'. " +
+            "MessageId: {}, Headers: {}", id, messageId, headers )
         }
     }
 
