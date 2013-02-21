@@ -28,9 +28,6 @@ class Application extends Bootable {
       case t: Throwable => log.error( t, "Could not shutdown client supervisor properly" )
     }
     system.shutdown
-    println( NonBlockingProducerResultAggregator.report )
-    println( EventConsumerResultAggregator.report )
-    println( RpcClientResultAggregator.report )
     val now = System.currentTimeMillis
     println( "\n System uptime: " + ( ( now - init ) milliseconds ).toSeconds + " seconds\n" )
   }

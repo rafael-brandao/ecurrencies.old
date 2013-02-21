@@ -90,10 +90,10 @@ object ClientSupervisor {
   }
 
   def createEventConsumerResultAggregator( implicit context: ActorContext ) =
-    createActorRef( `event-consumer.instances` )( new EventConsumerResultAggregator )
+    createActorRef()( new EventConsumerResultAggregator )
 
   def createNonBlockingProducerResultAggregator( implicit context: ActorContext ) =
-    createActorRef( `non-blocking-producer.instances` )( new NonBlockingProducerResultAggregator )
+    createActorRef()( new NonBlockingProducerResultAggregator )
 
   def createNonBlockingProducer( resultAggregator: ActorRef )( implicit context: ActorContext ) =
     createActorRef( `non-blocking-producer.instances` ) {
@@ -101,14 +101,14 @@ object ClientSupervisor {
     }
 
   def createRpcClientResultAggregator( implicit context: ActorContext ) =
-    createActorRef( `rpc-client.instances` )( new RpcClientResultAggregator )
+    createActorRef()( new RpcClientResultAggregator )
 
   def createRpcClient( resultAggregator: ActorRef )( implicit context: ActorContext ) =
     createActorRef( `rpc-client.instances` ) {
       new RpcClientProducer( producerChannelFunction, resultAggregator, `exchange-name`, producerSleepTime )
     }
 
-  private def createActorRef[ T <: Actor ]( instances: Int )( f: => T )( implicit context: ActorContext ) = {
+  private def createActorRef[ T <: Actor ]( instances: Int = 1)( f: => T )( implicit context: ActorContext ) = {
     val props = Props( f )
     instances match {
       case instances if instances > 1 => context.actorOf( props.withRouter( RoundRobinRouter( instances ) ) )
