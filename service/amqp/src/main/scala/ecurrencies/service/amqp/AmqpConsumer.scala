@@ -115,7 +115,7 @@ private[ amqp ] class AmqpConsumer( createChannel: () => Channel, queue: String 
     } catch {
       case t @ ( _: ArrayIndexOutOfBoundsException | _: NullPointerException ) =>
         reject( deliveryTag, messageId ) {
-          log.error( t, "Message {} did not provide valid 'ecurrency-id' and 'service-id' headers", messageId )
+          log.error( t, "Message {} did not provide a valid routingKey.", messageId )
         }
     }
   }
