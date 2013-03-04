@@ -4,6 +4,7 @@
 *.ini
 *.ipr
 *.iws
+*.lock
 .idea
 .cache
 .classpath
