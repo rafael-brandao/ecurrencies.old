@@ -1,11 +1,12 @@
 package ecurrencies.common.akka
 
 import scala.reflect.ClassTag
-import akka.actor.{ Actor, ActorRef, Status, actorRef2Scala }
+
+import akka.actor.{ Actor, ActorLogging, ActorRef, Status }
+
 import com.google.protobuf.{ GeneratedMessage, InvalidProtocolBufferException }
+
 import ecurrencies.api.EcurrencyServiceException
-import akka.actor.ActorLogging
-import java.lang.reflect.InvocationTargetException
 
 class ProtobuffParser[ T <: GeneratedMessage: ClassTag ]( next: ActorRef ) extends Actor with ActorLogging {
 
