@@ -50,7 +50,7 @@ trait TokenGenerator {
 
       var token: Array[ Byte ] = null
 
-      val securityWordBytes =
+      val securityWordBytes: Array[ Byte ] =
         for (
           char <- securityWord
         ) yield char.asInstanceOf[ Byte ]
@@ -85,9 +85,7 @@ object TokenGenerator {
   private lazy val SHA_256 = messageDigest( "SHA-256" )
 
   private def dispose( arrays: Array[ _ <: AnyVal ]* ) {
-    arrays foreach {
-      dispose( _ )
-    }
+    arrays foreach { dispose( _ ) }
   }
 
   private def dispose[ T <: AnyVal ]( array: Array[ T ] ) {
