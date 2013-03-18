@@ -1,8 +1,10 @@
 package ecurrencies.libertyreserve.service
 
 import scala.reflect.ClassTag
+import scala.concurrent.duration.{ FiniteDuration, DurationLong }
+import scala.language.postfixOps
 
-import akka.actor.{ Actor, ActorRef, Props, actorRef2Scala }
+import akka.actor.{ Actor, ActorRef,  OneForOneStrategy, Props, SupervisorStrategy }
 
 import com.google.protobuf.GeneratedMessage
 import com.typesafe.config.Config
@@ -23,6 +25,12 @@ class LibertyReserveSupervisor extends Actor {
 
   import LibertyReserveJsonProtocol._
   import Settings._
+  import SupervisorStrategy.Restart
+  
+  override val supervisorStrategy =
+    OneForOneStrategy( maxNrOfRetries = 10, withinTimeRange = 1 minute ) {
+      case _: Exception => Restart
+    }
 
   implicit val sslEngineProvider = ClientSSLEngineProvider
 
