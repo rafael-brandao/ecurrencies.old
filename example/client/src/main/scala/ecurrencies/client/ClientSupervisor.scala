@@ -4,13 +4,15 @@ import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration.{ FiniteDuration, DurationLong }
 import scala.language.postfixOps
 import scala.util.Random
+
 import akka.actor.{ Actor, ActorContext, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, PoisonPill, Props, SupervisorStrategy }
 import akka.pattern.{ AskTimeoutException, gracefulStop }
-import akka.routing.RoundRobinRouter
+import akka.routing.{ Broadcast, RoundRobinRouter }
+
 import com.rabbitmq.client.{ Channel, ConnectionFactory }
+
 import ecurrencies.libertyreserve.domain._
 import ecurrencies.libertyreserve.test.util.LibertyReserveGenerator._
-import akka.routing.Broadcast
 
 case object Start
 case object Stop
