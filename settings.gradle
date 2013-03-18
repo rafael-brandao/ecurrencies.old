@@ -21,6 +21,7 @@ include 'distribution'
 include 'provider:liberty-reserve:domain'
 include 'provider:liberty-reserve:service'
 include 'provider:liberty-reserve:test-util'
+include 'provider:liberty-reserve:util'
 
 // Client example
 include 'example:client'
