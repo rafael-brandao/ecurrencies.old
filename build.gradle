@@ -123,7 +123,7 @@ configure(scalaProjects) {
     dependencies {
         compile    "$scalaGroup:scala-library:$scalaVersion"
         scalaTools "$scalaGroup:scala-compiler:$scalaVersion"
-        testCompile "${scalaTestGroup}:scalatest_${scalaVersion}:${scalaTestVersion}",
+        testCompile "${scalaTestGroup}:scalatest_${scalaTestScalaVersion}:${scalaTestVersion}",
                 "${junitGroup}:junit:${junitVersion}"
     }
 
