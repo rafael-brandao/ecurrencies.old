@@ -1,6 +1,6 @@
 dependencies {
     compile project(':provider:liberty-reserve:domain'),
+            project(':provider:liberty-reserve:util'),
             "${jodaConvertGroup}:joda-convert:${jodaConvertVersion}",
-            "${jodaTimeGroup}:joda-time:${jodaTimeVersion}",
-            "${scalaGroup}:scala-reflect:${scalaVersion}"
+            "${jodaTimeGroup}:joda-time:${jodaTimeVersion}"
 }

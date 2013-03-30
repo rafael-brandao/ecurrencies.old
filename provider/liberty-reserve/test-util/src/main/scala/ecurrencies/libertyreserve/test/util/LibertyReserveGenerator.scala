@@ -1,70 +1,81 @@
 package ecurrencies.libertyreserve.test.util
 
 import java.lang.System.currentTimeMillis
-import java.text.DecimalFormat
 
 import scala.math.BigDecimal.RoundingMode.HALF_UP
+import scala.language.implicitConversions
 import scala.reflect.ClassTag
-import scala.reflect.runtime.universe._
 import scala.util.Random
-
-import org.joda.time.{ DateTime, DateTimeZone }
-import DateTimeZone.UTC
 
 import com.google.protobuf.GeneratedMessage
 import com.google.protobuf.GeneratedMessage.Builder
 
+import org.joda.time.{ DateTime, DateTimeZone }
+import DateTimeZone.UTC
+
 import ecurrencies.libertyreserve.domain._
+import ecurrencies.libertyreserve.util._
+import ecurrencies.libertyreserve.util.RequestHeaderGenerator
+import ecurrencies.libertyreserve.util.RequestHeaderGenerator._
+
+object Valid extends Enumeration {
+  type Valid = Value
+  val Yes, No, Any = Value
+}
 
 object LibertyReserveGenerator {
 
-  object Valid extends Enumeration {
-    type Valid = Value
-    val Yes, No, Any = Value
-  }
   import Valid._
 
-  lazy val empty = ""
-  lazy val random = Random
-  lazy val idNumberFormat = new DecimalFormat( "00000000000000000000" )
-  lazy val accountIdFormat = "%c%d"
-  lazy val accountIdChars = Array( 'M', 'U', 'X' )
+  private lazy val empty = ""
+  private lazy val random = Random
+  private lazy val accountIdFormat = "%c%d"
+  private lazy val accountIdChars = Array( 'M', 'U', 'X' )
 
-  def accountNameRequest() = {
-    import AccountNameRequest.Builder
-    nextRequest[ AccountNameRequest, Builder ]() { builder =>
-      builder.setSearchAccountId( accountId )
-    }
+  implicit def class2AccountNameRequest( clazz: Class[ AccountNameRequest ] ): AccountNameRequest = {
+    import AccountNameRequest.{ Builder, Payload }
+
+    implicit val payload = nextMessage[ Payload, Payload.Builder ]() { _.setSearchAccountId( accountId ) }
+
+    nextRequest[ AccountNameRequest, Builder, Payload ]
   }
 
-  def balanceRequest() = {
-    import BalanceRequest.Builder
-    val optional = Array( { builder: Builder => builder.setCurrency( nextEnumType( classOf[ Currency ] ) ) } )
-    nextRequest[ BalanceRequest, Builder ]( optional )()
+  implicit def class2BalanceRequest( clazz: Class[ BalanceRequest ] ): BalanceRequest = {
+    import BalanceRequest.{ Builder, Payload }
+
+    val optional = Array( { builder: Payload.Builder => builder.setCurrency( nextEnumType( classOf[ Currency ] ) ) } )
+
+    implicit val payload = nextMessage[ Payload, Payload.Builder ]( optional )()
+
+    nextRequest[ BalanceRequest, Builder, Payload ]
   }
 
-  def findTransactionRequest() = {
-    import FindTransactionRequest.Builder
-    nextRequest[ FindTransactionRequest, Builder ]() { builder =>
-      builder.setBatchNumber( batchNumber )
-    }
+  implicit def class2FindTransactionRequest( clazz: Class[ FindTransactionRequest ] ): FindTransactionRequest = {
+    import FindTransactionRequest.{ Builder, Payload }
+
+    implicit val payload = nextMessage[ Payload, Payload.Builder ]() { _.setBatchNumber( batchNumber ) }
+
+    nextRequest[ FindTransactionRequest, Builder, Payload ]
   }
 
-  def historyRequest() = {
-    import HistoryRequest.Builder
+  implicit def class2HistoryRequest( clazz: Class[ HistoryRequest ] ): HistoryRequest = {
+    import HistoryRequest.{ Builder, Payload }
+
     val optional = Array(
-      { builder: Builder => builder.setPageIndex( random.nextInt( 30 ) + 1 ) },
-      { builder: Builder => builder.setPageSize( random.nextInt( 20 ) + 1 ) }
+      { builder: Payload.Builder => builder.setPageIndex( random.nextInt( 30 ) + 1 ) },
+      { builder: Payload.Builder => builder.setPageSize( random.nextInt( 20 ) + 1 ) }
     )
-    nextRequest[ HistoryRequest, Builder ]( optional ) { builder =>
-      builder.setHistorySpecification( historySpecification )
-    }
+
+    implicit val payload = nextMessage[ Payload, Payload.Builder ]( optional ) { _.setSpecification( historySpecification ) }
+
+    nextRequest[ HistoryRequest, Builder, Payload ]
   }
 
-  def transferRequest() =
-    nextRequest[ TransferRequest, TransferRequest.Builder ]() { builder =>
-      builder
-        .setPayeeAccountId( accountId )
+  implicit def class2TransferRequest( clazz: Class[ TransferRequest ] ): TransferRequest = {
+    import TransferRequest.{ Builder, Payload }
+
+    implicit val payload = nextMessage[ Payload, Payload.Builder ]() {
+      _.setPayeeAccountId( accountId )
         .setAmount( amount( 50000 ) )
         .setCurrency( nextEnumType( classOf[ Currency ] ) )
         .setMemo( "Some transaction" )
@@ -73,74 +84,108 @@ object LibertyReserveGenerator {
         .setPrivate( nextBoolean )
         .setPurpose( nextEnumType( classOf[ PaymentPurpose ] ) )
     }
+    nextRequest[ TransferRequest, Builder, Payload ]
+  }
 
-  def accountNameResponse() = {
-    import AccountNameResponse.Builder
-    nextResponse[ AccountNameResponse, Builder ]() { builder =>
-      builder.setAccount( account )
+  implicit def class2AccountNameResponse( clazz: Class[ AccountNameResponse ] ): AccountNameResponse = ( clazz, Any )
+
+  implicit def class2AccountNameResponse( tuple: Tuple2[ Class[ AccountNameResponse ], Valid ] ): AccountNameResponse = {
+    import AccountNameResponse.{ Builder, Payload }
+
+    nextResponse[ AccountNameResponse, Builder, Payload ]( tuple._2 ) {
+      nextMessage[ Payload, Payload.Builder ]() { _.setAccount( account ) }
     }
   }
 
-  def balanceResponse() = {
-    import BalanceResponse.Builder
-    nextResponse[ BalanceResponse, Builder ]() { builder =>
-      Currency.values.foldLeft( builder ) { ( b, currency ) =>
-        b.addBalances( balance( currency ) )
+  implicit def class2BalanceResponse( clazz: Class[ BalanceResponse ] ): BalanceResponse = ( clazz, Any )
+
+  implicit def class2BalanceResponse( tuple: Tuple2[ Class[ BalanceResponse ], Valid ] ): BalanceResponse = {
+    import BalanceResponse.{ Builder, Payload }
+
+    nextResponse[ BalanceResponse, Builder, Payload ]( tuple._2 ) {
+      nextMessage[ Payload, Payload.Builder ]() {
+        Currency.values.foldLeft( _ ) { ( b, currency ) => b.addBalances( balance( currency ) ) }
       }
     }
   }
 
-  def historyResponse( nrTransactions: Option[ Int ] = None ) = {
-    import HistoryResponse.Builder
-    var valid: Valid = Any
-    var numberOfTransactions = random.nextInt( 20 )
-    nrTransactions match {
-      case Some( value ) =>
-        if ( value >= 0 && value <= 20 ) {
-          valid = Yes
-          numberOfTransactions = value
-        } else if ( value < 0 ) {
-          valid = No
-        }
-      case _ =>
-    }
-    lazy val range = 0 until numberOfTransactions
-    nextResponse[ HistoryResponse, Builder ]( valid ) { builder =>
-      range.end match {
-        case 0 => builder.setHasMore( false )
-        case _ =>
-          range.map( i => transaction ).foldLeft( builder ) { ( b, t ) =>
-            b.addTransactions( t )
-          }.setHasMore( nextBoolean )
+  implicit def class2HistoryResponse( clazz: Class[ HistoryResponse ] ): HistoryResponse = ( clazz, Any )
+
+  implicit def class2HistoryResponse( tuple: Tuple2[ Class[ HistoryResponse ], Valid ] ): HistoryResponse =
+    ( tuple._1, tuple._2, Some( random.nextInt( 20 ) ) )
+
+  implicit def class2HistoryResponse2( tuple: Tuple2[ Class[ HistoryResponse ], Option[ Int ] ] ): HistoryResponse =
+    ( tuple._1, Yes, tuple._2 )
+
+  implicit private def class2HistoryResponse( tuple: Tuple3[ Class[ HistoryResponse ], Valid, Option[ Int ] ] ): HistoryResponse = {
+    import HistoryResponse.{ Builder, Payload }
+
+    nextResponse[ HistoryResponse, Builder, Payload ]( tuple._2 ) {
+      nextMessage[ Payload, Payload.Builder ]() {
+        builder =>
+          val numberOfTransactions =
+            tuple._3 match {
+              case Some( value ) if ( value >= 0 && value <= 20 ) => value
+              case _ => 0
+            }
+          val range = 0 until numberOfTransactions
+
+          range.end match {
+            case 0 => builder.setHasMore( false )
+            case _ =>
+              range.map( i => transaction ).foldLeft( builder ) { _.addTransactions( _ ) }.setHasMore( nextBoolean )
+          }
       }
     }
   }
 
-  def transactionResponse() = {
-    import TransactionResponse.Builder
-    nextResponse[ TransactionResponse, Builder ]() { builder =>
-      builder.setTransaction( transaction )
+  implicit def class2TransactionResponse( clazz: Class[ TransactionResponse ] ): TransactionResponse = ( clazz, Any )
+
+  implicit def class2TransactionResponse( tuple: Tuple2[ Class[ TransactionResponse ], Option[ Boolean ] ] ): TransactionResponse =
+    ( tuple._1, Yes, tuple._2 )
+
+  implicit def class2TransactionResponse2( tuple: Tuple2[ Class[ TransactionResponse ], Valid ] ): TransactionResponse =
+    random.nextFloat match {
+      case value if value <= 0.8 => ( tuple._1, tuple._2, Some( true ) )
+      case _                     => ( tuple._1, tuple._2, Some( false ) )
+    }
+
+  implicit def class2TransactionResponse( tuple: Tuple3[ Class[ TransactionResponse ], Valid, Option[ Boolean ] ] ): TransactionResponse = {
+    import TransactionResponse.{ Builder, Payload }
+
+    nextResponse[ TransactionResponse, Builder, Payload ]( tuple._2 ) {
+      nextMessage[ Payload, Payload.Builder ]() {
+        builder =>
+          tuple._3 match {
+            case Some( true ) => builder.setTransaction( transaction )
+            case _            => builder
+          }
+      }
     }
   }
 
-  def requestHeader() = RequestHeader.newBuilder
-    .setAccount( accountId )
-    .setApi( random.nextLong.toHexString )
-    .build
+  private implicit def requestHeader[ Payload <: GeneratedMessage ]( payload: Payload )(
+    implicit headerGenerator: RequestHeaderGenerator[ Payload ] ): RequestHeader = {
 
-  def account() = Account.newBuilder
+    val requestHeader: RequestHeader = ( payload, api, "password".toCharArray )
+    requestHeader
+  }
+
+  private def api(): Api = Api.newBuilder.setAccountId( accountId ).setName( "MyApi_" + id ).build
+
+  private def account(): Account = Account.newBuilder
     .setAccountId( accountId )
     .setAccountName( empty )
     .build
 
-  def balance(): Balance = balance( nextEnumType( classOf[ Currency ] ) )
+  private def balance(): Balance = balance( nextEnumType( classOf[ Currency ] ) )
 
-  def balance( currency: Currency ): Balance = Balance.newBuilder
+  private def balance( currency: Currency ): Balance = Balance.newBuilder
     .setCurrency( currency )
     .setBalance( amount( 50000 ) )
     .build
 
-  def historySpecification() = {
+  private def historySpecification() = {
     import HistorySpecification.Builder
 
     lazy val minimumYearsOffset = random.nextInt( 10 )
@@ -150,7 +195,6 @@ object LibertyReserveGenerator {
 
     val optional = Array(
       { builder: Builder => builder.setFrom( stripTimestampMillis( timestamp( maximumYearsOffset ) ) ) },
-      { builder: Builder => builder.setTill( stripTimestampMillis( timestamp( minimumYearsOffset, maximumYearsOffset ) ) ) },
       { builder: Builder => builder.setCurrency( nextEnumType( classOf[ Currency ] ) ) },
       { builder: Builder => builder.setTransactionDirection( nextEnumType( classOf[ TransactionDirection ] ) ) },
       { builder: Builder => builder.setRelatedAccountId( accountId ) },
@@ -159,10 +203,12 @@ object LibertyReserveGenerator {
       { builder: Builder => builder.setAmountFrom( amount( amountFrom ) ) },
       { builder: Builder => builder.setAmountTo( amount( amountTo ) ) }
     )
-    nextMessage[ HistorySpecification, Builder ]( optional )()
+    nextMessage[ HistorySpecification, Builder ]( optional ) {
+      _.setTill( stripTimestampMillis( timestamp( minimumYearsOffset, maximumYearsOffset ) ) )
+    }
   }
 
-  def transaction() = Transaction.newBuilder
+  private def transaction() = Transaction.newBuilder
     .setBatchNumber( batchNumber )
     .setDate( stripTimestampMillis( timestamp( 15 ) ) )
     .setMerchantReference( id )
@@ -180,15 +226,14 @@ object LibertyReserveGenerator {
     .setSource( nextEnumType( classOf[ TransactionSource ] ) )
     .build
 
-  def responseHeader( valid: Valid = Any ) = {
+  private def responseHeader( valid: Valid = Any ) = {
     import ResponseHeader.Builder
-    def randomStatus() = {
-      if ( random.nextFloat < 0.8 )
-        ResponseStatus.SUCCESS
-      else if ( random.nextFloat < 0.7 )
-        ResponseStatus.ERROR
-      else ResponseStatus.NONE
-    }
+    def randomStatus() =
+      random.nextFloat match {
+        case value if value <= 0.85 => ResponseStatus.SUCCESS
+        case value if value <= 0.95 => ResponseStatus.ERROR
+        case _                      => ResponseStatus.NONE
+      }
 
     val status = valid match {
       case Any => randomStatus
@@ -208,11 +253,9 @@ object LibertyReserveGenerator {
     }
   }
 
-  def error() = Error.newBuilder.setCode( random.nextInt( 999 ) + 1 ).build
+  private def error() = Error.newBuilder.setCode( random.nextInt( 999 ) + 1 ).build
 
-  private def accountId() = {
-    accountIdFormat.format( accountIdChars( random.nextInt( 3 ) ), random.nextInt( 9999999 ) + 1 )
-  }
+  private def accountId() = accountIdFormat.format( accountIdChars( random.nextInt( 3 ) ), random.nextInt( 9999999 ) + 1 )
 
   private def amount( maximum: Long ): String = amount( 0, maximum )
 
@@ -225,13 +268,9 @@ object LibertyReserveGenerator {
       case value               => value * ( -1 )
     }
 
-  private def id(): String = {
-    idNumberFormat.format( nextNumber( 0, 999999999999999999L ) )
-  }
+  private def id(): String = generateId( nextNumber( 0, 999999999 ) )
 
-  private def timestamp( maximumYearsOffset: Int ): Long = {
-    timestamp( 0, maximumYearsOffset )
-  }
+  private def timestamp( maximumYearsOffset: Int ): Long = timestamp( 0, maximumYearsOffset )
 
   private def timestamp[ T <% Int ]( minimumYearsOffset: T, maximumYearsOffset: T ): Long = {
     val now = DateTime.now( UTC )
@@ -239,28 +278,25 @@ object LibertyReserveGenerator {
     nextNumber( min.getMillis, now.getMillis )
   }
 
-  private def stripTimestampMillis[ T <% Long ]( timestamp: T ): Long = {
-    1000 * ( timestamp / 1000 )
-  }
+  private def stripTimestampMillis[ T <% Long ]( timestamp: T ): Long = 1000 * ( timestamp / 1000 )
 
   private def nextEnumType[ T <: Enum[ T ] ]( enumClass: Class[ T ] ): T = {
     val values = enumClass.getEnumConstants
     values( random.nextInt( values.length ) )
   }
 
-  private def nextNumber[ T <% Long ]( minimum: T, maximum: T ) = {
+  private def nextNumber[ L <% Long ]( minimum: L, maximum: L ): Long = {
     minimum + Math.round( random.nextFloat * ( maximum - minimum ) )
   }
 
-  private def nextDecimalNumber[ T <% Double ]( minimum: T, maximum: T ) = {
+  private def nextDecimalNumber[ D <% Double ]( minimum: D, maximum: D ): Double = {
     minimum + random.nextFloat * ( maximum - minimum )
   }
 
   private def nextBoolean() = random.nextBoolean
 
   private def next[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag ](
-    builder: B,
-    optionalEntries: Seq[ B => B ] = Seq[ B => B ]() )( required: B => B = { b: B => b } ): M = {
+    builder: B, optionalEntries: Seq[ B => B ] = Seq[ B => B ]() )( required: B => B = { b: B => b } ): M = {
 
     ( required +: ( optionalEntries filter { b => random.nextFloat < random.nextFloat } ) ).foldLeft( builder ) {
       ( b, f ) => f( b )
@@ -274,49 +310,63 @@ object LibertyReserveGenerator {
     next( nextBuilder[ M, B ], optionalEntries )( required )
   }
 
-  private def nextResponse[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag ](
-    valid: Valid = Any, optionalEntries: Seq[ B => B ] = Seq[ B => B ]() )( required: B => B = { b: B => b } ): M = {
+  private def nextResponse[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag, P <: GeneratedMessage: ClassTag ](
+    valid: Valid = Any )( payloadFunction: => P ): M = {
 
-    lazy val rh = responseHeader( valid )
-    lazy val builder = implicitly[ ClassTag[ B ] ].runtimeClass
-      .getDeclaredMethod( "setResponseHeader", classOf[ ResponseHeader ] )
-      .invoke( nextBuilder[ M, B ], rh )
-      .asInstanceOf[ B ]
-    rh.getStatus() match {
-      case ResponseStatus.SUCCESS => next( builder, optionalEntries )( required )
-      case _                      => builder.build.asInstanceOf[ M ]
+    val builderClass = implicitly[ ClassTag[ B ] ].runtimeClass
+    val payloadClass = implicitly[ ClassTag[ P ] ].runtimeClass
+
+    val header = responseHeader( valid )
+
+    val builder =
+      builderClass
+        .getDeclaredMethod( "setHeader", classOf[ ResponseHeader ] )
+        .invoke( nextBuilder[ M, B ], header )
+        .asInstanceOf[ B ]
+
+    lazy val emptyPayload: P = {
+      val payloadBuilder =
+        payloadClass
+          .getDeclaredMethod( "newBuilder" )
+          .invoke( null )
+
+      payloadBuilder.getClass
+        .getDeclaredMethod( "build" )
+        .invoke( payloadBuilder ).asInstanceOf[ P ]
     }
+
+    val payload =
+      header.getStatus() match {
+        case ResponseStatus.SUCCESS => payloadFunction
+        case _                      => emptyPayload
+      }
+
+    builderClass
+      .getDeclaredMethod( "setPayload", payloadClass )
+      .invoke( builder, payload )
+      .asInstanceOf[ B ].build.asInstanceOf[ M ]
   }
 
-  private def nextRequest[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag ](
-    optionalEntries: Seq[ B => B ] = Seq[ B => B ]() )( required: B => B = { b: B => b } ): M = {
+  private def nextRequest[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag, P <: GeneratedMessage: ClassTag ](
+    implicit payload: P, headerGenerator: RequestHeaderGenerator[ P ] ): M = {
 
-    val builder = implicitly[ ClassTag[ B ] ].runtimeClass
-      .getDeclaredMethod( "setRequestHeader", classOf[ RequestHeader ] )
-      .invoke( nextBuilder[ M, B ], requestHeader )
-      .asInstanceOf[ B ]
-    next( builder, optionalEntries )( required )
+    val header: RequestHeader = payload
+
+    val builder =
+      implicitly[ ClassTag[ B ] ].runtimeClass
+        .getDeclaredMethod( "setHeader", classOf[ RequestHeader ] )
+        .invoke( nextBuilder[ M, B ], header )
+        .asInstanceOf[ B ]
+
+    builder.getClass
+      .getDeclaredMethod( "setPayload", implicitly[ ClassTag[ P ] ].runtimeClass )
+      .invoke( builder, payload )
+      .asInstanceOf[ B ].build.asInstanceOf[ M ]
   }
 
-  private def nextBuilder[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag ](): B = {
+  private def nextBuilder[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag ](): B =
     implicitly[ ClassTag[ M ] ].runtimeClass
       .getDeclaredMethod( "newBuilder" )
-      .invoke( null )
-      .asInstanceOf[ B ]
-  }
-
-  def create[ M <: GeneratedMessage: TypeTag ](): M =
-    typeOf[ M ] match {
-      case m if m =:= typeOf[ AccountNameRequest ] => accountNameRequest.asInstanceOf[ M ]
-      case m if m =:= typeOf[ BalanceRequest ] => balanceRequest.asInstanceOf[ M ]
-      case m if m =:= typeOf[ FindTransactionRequest ] => findTransactionRequest.asInstanceOf[ M ]
-      case m if m =:= typeOf[ HistoryRequest ] => historyRequest.asInstanceOf[ M ]
-      case m if m =:= typeOf[ TransferRequest ] => transferRequest.asInstanceOf[ M ]
-      case m if m =:= typeOf[ AccountNameResponse ] => accountNameResponse.asInstanceOf[ M ]
-      case m if m =:= typeOf[ BalanceResponse ] => balanceResponse.asInstanceOf[ M ]
-      case m if m =:= typeOf[ HistoryResponse ] => historyResponse().asInstanceOf[ M ]
-      case m if m =:= typeOf[ TransactionResponse ] => transactionResponse.asInstanceOf[ M ]
-      case _ => throw new IllegalArgumentException( typeOf[ M ] + " is not a valid LibertyReserve API message." )
-    }
+      .invoke( null ).asInstanceOf[ B ]
 
 }
