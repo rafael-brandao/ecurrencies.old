@@ -55,8 +55,7 @@ class LibertyReserveSupervisor extends Actor {
   val historyParser = parser[ HistoryRequest ]( "history", historyHttp )
 
   val transferHttp = httpActor[ TransferRequest, TransactionResponse ]( `api.transfer-uri` )
-  val transferActor = actorOf { new TransferActor( transferHttp, historyHttp ) }
-  val transferParser = parser[ TransferRequest ]( "transfer", transferActor )
+  val transferParser = parser[ TransferRequest ]( "transfer", transferHttp )
 
   private def httpActor[ Request <: GeneratedMessage: ClassTag, Response <: GeneratedMessage: ClassTag ](
     uri: String )( implicit marshaller: Marshaller[ Request ], unmarshaller: Unmarshaller[ Response ] ) = {
