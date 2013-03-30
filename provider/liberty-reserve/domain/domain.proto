@@ -2,7 +2,6 @@ package ecurrencies.libertyreserve.domain;
 
 option java_package = "ecurrencies.libertyreserve.domain";
 option java_multiple_files = true;
-
 enum Currency {
     USD = 1;
     EURO = 2;
@@ -36,59 +35,84 @@ enum TransactionType {
     TRANSFER = 1;
 }
 
+message Api {
+    required string name = 1;
+    required string accountId = 2; // validation -> regex = (M|U|X)(\d)+
+}
+
 message RequestHeader {
-    required string account = 1; // validation -> regex = (M|U|X)(\d)+
-    required string api = 2;
-    optional string securityWord = 3 [default = ""];
+    required string id = 1;
+    required Api api = 2;
+    required string token = 3;
 }
 
 message AccountNameRequest {
-    required RequestHeader requestHeader = 1;
-    required string searchAccountId = 2; // validation -> regex = (M|U|X)(\d)+
- }
+    message Payload {
+        required string searchAccountId = 1; // validation -> regex = (M|U|X)(\d)+
+    }
+
+    required RequestHeader header = 1;
+    required Payload payload = 2;
+}
 
 message BalanceRequest {
-    required RequestHeader requestHeader = 1;
-    optional Currency currency = 2;
+    message Payload {
+        optional Currency currency = 1;
+    }
+
+    required RequestHeader header = 1;
+    required Payload payload = 2;
 }
 
 message FindTransactionRequest {
-    required RequestHeader requestHeader = 1;
-    required int64 batchNumber = 2; // validation -> batchNumber > 0
+    message Payload {
+        required int64 batchNumber = 1; // validation -> batchNumber > 0
+    }
+
+    required RequestHeader header = 1;
+    required Payload payload = 2;
 }
 
 // validation constraint 1 ->  till > from
 // validation constraint 2 ->  amountFrom > amountTo
- message HistorySpecification {
-    optional int64 from = 1 [default = 0]; // validation -> from >= 0
-    optional int64 till = 2 [default = 9223372036854775806]; // default = 2⁶³-1 | validation -> till > 0
+message HistorySpecification {
+    optional int64 from = 1 ; // validation -> from >= 0
+    required int64 till = 2 ; // validation -> till > 0
     optional Currency currency = 3;
     optional TransactionDirection transactionDirection = 4;
-    optional string relatedAccountId = 5 [default = ""]; // validation -> regex = \d+\.((\d{2,2}){1,2})
-    optional string merchantReference = 6 [default = ""]; // validation -> varchar(20)
+    optional string relatedAccountId = 5; // validation -> regex = \d+\.((\d{2,2}){1,2})
+    optional string merchantReference = 6; // validation -> varchar(20)
     optional TransactionSource transactionSource = 7;
     optional TransactionPrivacy transactionPrivacy = 8;
-    optional string amountFrom = 9 [default = ""]; // validation -> regex = \d+\.((\d{2,2}){1,2})
-    optional string amountTo = 10 [default = ""]; // validation -> regex = \d+\.((\d{2,2}){1,2})
- }
+    optional string amountFrom = 9; // validation -> regex = \d+\.((\d{2,2}){1,2})
+    optional string amountTo = 10; // validation -> regex = \d+\.((\d{2,2}){1,2})
+}
 
 message HistoryRequest {
-    required RequestHeader requestHeader = 1;
-    required HistorySpecification historySpecification = 2;
-    optional int32 pageIndex = 3 [default = 1]; // validation -> pageIndex > 0
-    optional int32 pageSize = 4 [default = 20]; // validation -> 0 < pageSize <= 20
- }
+    message Payload {
+        required HistorySpecification specification = 1;
+        optional int32 pageIndex = 2 [default = 1]; // validation -> pageIndex > 0
+        optional int32 pageSize = 3 [default = 20]; // validation -> 0 < pageSize <= 20
+    }
+
+    required RequestHeader header = 1;
+    required Payload payload = 2;
+}
 
 message TransferRequest {
-    required RequestHeader requestHeader = 1;
-    required string payeeAccountId = 2; // validation -> regex = (M|U|X)(\d)+
-    required string amount = 3; // validation -> regex = \d+\.((\d{2,2}){1,2})
-    required Currency currency = 4;
-    optional string memo = 5 [default = ""]; // validation -> varchar(250)
-    required string merchantReference = 6; // validation -> varchar(20)
-    optional TransactionType type = 7 [default = TRANSFER];
-    optional bool private = 8 [default = false];
-    optional PaymentPurpose purpose = 9 [default = SERVICE];
+    message Payload {
+        required string payeeAccountId = 1; // validation -> regex = (M|U|X)(\d)+
+        required string amount = 2; // validation -> regex = \d+\.((\d{2,2}){1,2})
+        required Currency currency = 3;
+        optional string memo = 4 [default = ""]; // validation -> varchar(250)
+        required string merchantReference = 5; // validation -> varchar(20)
+        optional TransactionType type = 6 [default = TRANSFER];
+        optional bool private = 7 [default = false];
+        optional PaymentPurpose purpose = 8 [default = SERVICE];
+    }
+
+    required RequestHeader header = 1;
+    required Payload payload = 2;
 }
 
 message Account {
@@ -99,7 +123,7 @@ message Account {
 message Balance {
     required Currency currency = 1;
     required string balance = 2; // validation -> regex = \d+\.((\d{2,2}){1,2})
- }
+}
 
 message Transaction {
     required int64 batchNumber = 1; // validation -> batchNumber > 0
@@ -138,22 +162,38 @@ message ResponseHeader {
 }
 
 message AccountNameResponse {
-    required ResponseHeader responseHeader = 1;
-    optional Account account = 2;
+    message Payload {
+        optional Account account = 1;
+    }
+
+    required ResponseHeader header = 1;
+    required Payload payload = 2;
 }
 
 message BalanceResponse {
-    required ResponseHeader responseHeader = 1;
-    repeated Balance balances = 2;
+    message Payload {
+        repeated Balance balances = 1;
+    }
+
+    required ResponseHeader header = 1;
+    required Payload payload = 2;
 }
 
 message HistoryResponse {
-    required ResponseHeader responseHeader = 1;
-    optional bool hasMore = 2 [default = false];
-    repeated Transaction transactions = 3;
+    message Payload {
+        optional bool hasMore = 1;
+        repeated Transaction transactions = 2;
+    }
+
+    required ResponseHeader header = 1;
+    required Payload payload = 2;
 }
 
 message TransactionResponse {
-    required ResponseHeader responseHeader = 1;
-    optional Transaction transaction = 2;
+    message Payload {
+        optional Transaction transaction = 1;
+    }
+
+    required ResponseHeader header = 1;
+    required Payload payload = 2;
 }
