@@ -22,7 +22,7 @@ def anySubdirectoryExists(project, list) {
 subprojects.findAll {
     it.childProjects.size() == 0
 }.each {
-    def protobufFiles = it.projectDir.listFiles({ f ->f ==~ protobufMarkup } as FileFilter).toList()
+    def protobufFiles = it.projectDir.listFiles({ it ==~ protobufMarkup } as FileFilter).toList()
     def isProtobufProject = protobufFiles.size() > 0
     def isDistributionProject = anySubdirectoryExists(it, distributionMarkup )
     def isScalaProject = anySubdirectoryExists(it, scalaMarkup )
