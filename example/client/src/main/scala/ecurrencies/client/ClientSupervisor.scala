@@ -64,11 +64,32 @@ object ClientSupervisor {
 
   private def nextMessage = {
     random.nextInt( 5 ) match {
-      case 0 => ( create[ AccountNameRequest ], `liberty-reserve.ecurrency-id`, `liberty-reserve.account-name-service-id` )
-      case 1 => ( create[ BalanceRequest ], `liberty-reserve.ecurrency-id`, `liberty-reserve.balance-service-id` )
-      case 2 => ( create[ FindTransactionRequest ], `liberty-reserve.ecurrency-id`, `liberty-reserve.find-transaction-service-id` )
-      case 3 => ( create[ HistoryRequest ], `liberty-reserve.ecurrency-id`, `liberty-reserve.history-service-id` )
-      case 4 => ( create[ TransferRequest ], `liberty-reserve.ecurrency-id`, `liberty-reserve.transfer-service-id` )
+
+      case 0 =>
+        ( { val request: AccountNameRequest = classOf[ AccountNameRequest ]; request },
+          `liberty-reserve.ecurrency-id`,
+          `liberty-reserve.account-name-service-id` )
+
+      case 1 =>
+        ( { val request: BalanceRequest = classOf[ BalanceRequest ]; request },
+          `liberty-reserve.ecurrency-id`,
+          `liberty-reserve.balance-service-id` )
+
+      case 2 =>
+        ( { val request: FindTransactionRequest = classOf[ FindTransactionRequest ]; request },
+          `liberty-reserve.ecurrency-id`,
+          `liberty-reserve.find-transaction-service-id` )
+
+      case 3 =>
+        ( { val request: HistoryRequest = classOf[ HistoryRequest ]; request },
+          `liberty-reserve.ecurrency-id`,
+          `liberty-reserve.history-service-id` )
+
+      case 4 =>
+        ( { val request: TransferRequest = classOf[ TransferRequest ]; request },
+          `liberty-reserve.ecurrency-id`,
+          `liberty-reserve.transfer-service-id` )
+
     }
   }
 
@@ -110,7 +131,7 @@ object ClientSupervisor {
       new RpcClientProducer( producerChannelFunction, resultAggregator, `exchange-name`, producerSleepTime )
     }
 
-  private def createActorRef[ T <: Actor ]( instances: Int = 1)( f: => T )( implicit context: ActorContext ) = {
+  private def createActorRef[ T <: Actor ]( instances: Int = 1 )( f: => T )( implicit context: ActorContext ) = {
     val props = Props( f )
     instances match {
       case instances if instances > 1 => context.actorOf( props.withRouter( RoundRobinRouter( instances ) ) )
