@@ -18,7 +18,7 @@ object Test {
 
   def main( args: Array[ String ] ) {
 
-    val request = accountNameRequest
+    val request: HistoryRequest = classOf[ HistoryRequest ]
     println( request )
 
     implicit val system = ActorSystem( "ecurrencies", ConfigFactory.load() )
@@ -28,7 +28,7 @@ object Test {
 
     Thread.sleep( 500 )
 
-    val service = system.actorFor( "/user/liberty-reserve/account-name2" )
+    val service = system.actorFor( "/user/liberty-reserve/history" )
     println( service.path )
 
     val future = ( service ? request.toByteArray ).mapTo[ GeneratedMessage ]

@@ -4,7 +4,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration.DurationInt
 import scala.language.postfixOps
 
-import akka.actor.{ ActorSystem, Props }
+import akka.actor.{ ActorRef, ActorSystem, Props }
 import akka.pattern.ask
 import akka.testkit.TestKit
 import akka.util.Timeout
@@ -21,7 +21,7 @@ import ecurrencies.libertyreserve.service.mock.HttpServiceMock
 import ecurrencies.libertyreserve.test.util.LibertyReserveGenerator._
 
 @RunWith( classOf[ JUnitRunner ] )
-class AccountNameSpec
+class TransferSpec
     extends TestKit( ActorSystem() )
     with WordSpec
     with MustMatchers
@@ -29,27 +29,27 @@ class AccountNameSpec
 
   implicit val timeout = Timeout( 5 seconds )
 
-  val request: AccountNameRequest = classOf[ AccountNameRequest ]
-  val response: AccountNameResponse = classOf[ AccountNameResponse ]
-  val invalidRequest: BalanceRequest = classOf[ BalanceRequest ]
-  
-  val httpActor = system.actorOf( Props( HttpServiceMock[ AccountNameRequest, AccountNameResponse ]( response ) ) )
-  val parser = system.actorOf( Props( ProtobuffParser[ AccountNameRequest ]( httpActor ) ) )
+  val request: TransferRequest = classOf[ TransferRequest ]
+  val response: TransactionResponse = classOf[ TransactionResponse ]
+  val invalidRequest: AccountNameRequest = classOf[ AccountNameRequest ]
 
-  "AccountName service" when {
-    "receives a valid AccountNameRequest" must {
-      "return a valid AccountNameResponse" in {
-        val future = ( parser ? request.toByteArray ).mapTo[ AccountNameResponse ]
+  val httpActor = system.actorOf( Props( HttpServiceMock[ TransferRequest, TransactionResponse ]( response ) ) )
+  val parser = system.actorOf( Props( ProtobuffParser[ TransferRequest ]( httpActor ) ) )
+
+  "Transfer service" when {
+    "receives a valid TransferRequest" must {
+      "return a valid TransactionResponse" in {
+        val future = ( parser ? request.toByteArray ).mapTo[ TransactionResponse ]
         val result = Await.result( future, timeout.duration )
         result must be( response )
       }
     }
   }
 
-  "AccountNameService" when {
-    "receives an invalid AccountNameRequest" must {
+  "Transfer service" when {
+    "receives an invalid TransferRequest" must {
       "return a non recoverable EcurrencyServiceException" in {
-        val future = ( parser ? invalidRequest.toByteArray ).mapTo[ AccountNameResponse ]
+        val future = ( parser ? invalidRequest.toByteArray ).mapTo[ TransactionResponse ]
         val exception = Await.result( future.failed, timeout.duration )
         exception.getClass must be( classOf[ EcurrencyServiceException ] )
         exception.asInstanceOf[ EcurrencyServiceException ].isRecoverable() must be( false )
