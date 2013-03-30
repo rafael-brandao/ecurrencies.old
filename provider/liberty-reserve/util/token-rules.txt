@@ -1,0 +1,14 @@
+Date       format -> YYYYMMDD:HH
+From, Till format -> YYYY-MM-DD HH:MM:SS
+
+TRANSFER_TOKEN         -> securityWord:ID:Reference:Payee:Currency:Amount:Date
+
+HISTORY_TOKEN          -> securityWord:ID:From:Till:Date 
+
+FIND_TRANSACTION_TOKEN -> securityWord:ID:TransactionID:Date
+
+BALANCE_TOKEN          -> securityWord:ID:Date
+
+Account_NAME_TOKEN     -> securityWord:ID:Date
+
+FINAL_TOKEN = SHA-256(TOKEN.getBytes("UTF-8"))
