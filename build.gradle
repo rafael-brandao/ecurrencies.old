@@ -3,11 +3,6 @@ import groovy.io.FileType
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.apache.tools.ant.taskdefs.condition.Os
 
-buildscript {
-    repositories { mavenRepo url: 'http://repo.springsource.org/plugins-release' }
-    dependencies { classpath("org.springframework.build.gradle:propdeps-plugin:0.0.2") }
-}
-
 ext {
     jvm = org.gradle.internal.jvm.Jvm.current()
     javaVersion = JavaVersion.current()
@@ -99,21 +94,18 @@ configure(javaProjects) {
 }
 
 configure(protobufProjects) {
+
     ext {
         protobufOutputDir = file("${project.buildDir}/protobuf")
         protobufJavaOutputDir = file("${protobufOutputDir}/java")
         protobufResourcesOutputDir = file("${protobufOutputDir}/resources")
     }
-
-
     sourceSets {
         main {
             java { srcDirs += "${protobufOutputDir}/java" }
             resources { srcDirs += "${protobufOutputDir}/resources" }
         }
     }
-
-
     apply from: "$rootDir/gradle/protobuf.gradle"
 }
 
