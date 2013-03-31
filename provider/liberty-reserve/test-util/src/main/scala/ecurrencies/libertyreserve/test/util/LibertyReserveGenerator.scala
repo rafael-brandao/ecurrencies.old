@@ -33,48 +33,48 @@ object LibertyReserveGenerator {
   private lazy val accountIdChars = Array( 'M', 'U', 'X' )
 
   implicit def class2AccountNameRequest( clazz: Class[ AccountNameRequest ] ): AccountNameRequest = {
-    import AccountNameRequest.{ Builder, Payload }
+    import AccountNameRequest.Payload
 
-    implicit val payload = nextMessage[ Payload, Payload.Builder ]() { _.setSearchAccountId( accountId ) }
+    implicit val payload = next[ Payload, Payload.Builder ]() { _.setSearchAccountId( accountId ) }
 
-    nextRequest[ AccountNameRequest, Builder, Payload ]
+    nextRequest[ AccountNameRequest, Payload ]
   }
 
   implicit def class2BalanceRequest( clazz: Class[ BalanceRequest ] ): BalanceRequest = {
-    import BalanceRequest.{ Builder, Payload }
+    import BalanceRequest.Payload
 
     val optional = Array( { builder: Payload.Builder => builder.setCurrency( nextEnumType( classOf[ Currency ] ) ) } )
 
-    implicit val payload = nextMessage[ Payload, Payload.Builder ]( optional )()
+    implicit val payload = next[ Payload, Payload.Builder ]( optional )()
 
-    nextRequest[ BalanceRequest, Builder, Payload ]
+    nextRequest[ BalanceRequest, Payload ]
   }
 
   implicit def class2FindTransactionRequest( clazz: Class[ FindTransactionRequest ] ): FindTransactionRequest = {
-    import FindTransactionRequest.{ Builder, Payload }
+    import FindTransactionRequest.Payload
 
-    implicit val payload = nextMessage[ Payload, Payload.Builder ]() { _.setBatchNumber( batchNumber ) }
+    implicit val payload = next[ Payload, Payload.Builder ]() { _.setBatchNumber( batchNumber ) }
 
-    nextRequest[ FindTransactionRequest, Builder, Payload ]
+    nextRequest[ FindTransactionRequest, Payload ]
   }
 
   implicit def class2HistoryRequest( clazz: Class[ HistoryRequest ] ): HistoryRequest = {
-    import HistoryRequest.{ Builder, Payload }
+    import HistoryRequest.Payload
 
     val optional = Array(
       { builder: Payload.Builder => builder.setPageIndex( random.nextInt( 30 ) + 1 ) },
       { builder: Payload.Builder => builder.setPageSize( random.nextInt( 20 ) + 1 ) }
     )
 
-    implicit val payload = nextMessage[ Payload, Payload.Builder ]( optional ) { _.setSpecification( historySpecification ) }
+    implicit val payload = next[ Payload, Payload.Builder ]( optional ) { _.setSpecification( historySpecification ) }
 
-    nextRequest[ HistoryRequest, Builder, Payload ]
+    nextRequest[ HistoryRequest, Payload ]
   }
 
   implicit def class2TransferRequest( clazz: Class[ TransferRequest ] ): TransferRequest = {
-    import TransferRequest.{ Builder, Payload }
+    import TransferRequest.Payload
 
-    implicit val payload = nextMessage[ Payload, Payload.Builder ]() {
+    implicit val payload = next[ Payload, Payload.Builder ]() {
       _.setPayeeAccountId( accountId )
         .setAmount( amount( 50000 ) )
         .setCurrency( nextEnumType( classOf[ Currency ] ) )
@@ -84,26 +84,26 @@ object LibertyReserveGenerator {
         .setPrivate( nextBoolean )
         .setPurpose( nextEnumType( classOf[ PaymentPurpose ] ) )
     }
-    nextRequest[ TransferRequest, Builder, Payload ]
+    nextRequest[ TransferRequest, Payload ]
   }
 
   implicit def class2AccountNameResponse( clazz: Class[ AccountNameResponse ] ): AccountNameResponse = ( clazz, Any )
 
   implicit def class2AccountNameResponse( tuple: Tuple2[ Class[ AccountNameResponse ], Valid ] ): AccountNameResponse = {
-    import AccountNameResponse.{ Builder, Payload }
+    import AccountNameResponse.Payload
 
-    nextResponse[ AccountNameResponse, Builder, Payload ]( tuple._2 ) {
-      nextMessage[ Payload, Payload.Builder ]() { _.setAccount( account ) }
+    nextResponse[ AccountNameResponse, Payload ]( tuple._2 ) {
+      next[ Payload, Payload.Builder ]() { _.setAccount( account ) }
     }
   }
 
   implicit def class2BalanceResponse( clazz: Class[ BalanceResponse ] ): BalanceResponse = ( clazz, Any )
 
   implicit def class2BalanceResponse( tuple: Tuple2[ Class[ BalanceResponse ], Valid ] ): BalanceResponse = {
-    import BalanceResponse.{ Builder, Payload }
+    import BalanceResponse.Payload
 
-    nextResponse[ BalanceResponse, Builder, Payload ]( tuple._2 ) {
-      nextMessage[ Payload, Payload.Builder ]() {
+    nextResponse[ BalanceResponse, Payload ]( tuple._2 ) {
+      next[ Payload, Payload.Builder ]() {
         Currency.values.foldLeft( _ ) { ( b, currency ) => b.addBalances( balance( currency ) ) }
       }
     }
@@ -118,10 +118,10 @@ object LibertyReserveGenerator {
     ( tuple._1, Yes, tuple._2 )
 
   implicit private def class2HistoryResponse( tuple: Tuple3[ Class[ HistoryResponse ], Valid, Option[ Int ] ] ): HistoryResponse = {
-    import HistoryResponse.{ Builder, Payload }
+    import HistoryResponse.Payload
 
-    nextResponse[ HistoryResponse, Builder, Payload ]( tuple._2 ) {
-      nextMessage[ Payload, Payload.Builder ]() {
+    nextResponse[ HistoryResponse, Payload ]( tuple._2 ) {
+      next[ Payload, Payload.Builder ]() {
         builder =>
           val numberOfTransactions =
             tuple._3 match {
@@ -151,10 +151,10 @@ object LibertyReserveGenerator {
     }
 
   implicit def class2TransactionResponse( tuple: Tuple3[ Class[ TransactionResponse ], Valid, Option[ Boolean ] ] ): TransactionResponse = {
-    import TransactionResponse.{ Builder, Payload }
+    import TransactionResponse.Payload
 
-    nextResponse[ TransactionResponse, Builder, Payload ]( tuple._2 ) {
-      nextMessage[ Payload, Payload.Builder ]() {
+    nextResponse[ TransactionResponse, Payload ]( tuple._2 ) {
+      next[ Payload, Payload.Builder ]() {
         builder =>
           tuple._3 match {
             case Some( true ) => builder.setTransaction( transaction )
@@ -203,7 +203,7 @@ object LibertyReserveGenerator {
       { builder: Builder => builder.setAmountFrom( amount( amountFrom ) ) },
       { builder: Builder => builder.setAmountTo( amount( amountTo ) ) }
     )
-    nextMessage[ HistorySpecification, Builder ]( optional ) {
+    next[ HistorySpecification, Builder ]( optional ) {
       _.setTill( stripTimestampMillis( timestamp( minimumYearsOffset, maximumYearsOffset ) ) )
     }
   }
@@ -230,9 +230,9 @@ object LibertyReserveGenerator {
     import ResponseHeader.Builder
     def randomStatus() =
       random.nextFloat match {
-        case value if value <= 0.85 => ResponseStatus.SUCCESS
-        case value if value <= 0.95 => ResponseStatus.ERROR
-        case _                      => ResponseStatus.NONE
+        case value if value <= 0.85 => ResponseStatus.SUCCESS // 85%
+        case value if value <= 0.95 => ResponseStatus.ERROR // 10 %
+        case _                      => ResponseStatus.NONE // 5%
       }
 
     val status = valid match {
@@ -241,7 +241,7 @@ object LibertyReserveGenerator {
       case No  => ResponseStatus.ERROR
     }
 
-    nextMessage[ ResponseHeader, Builder ]() { builder =>
+    next[ ResponseHeader, Builder ]() { builder =>
       locally {
         import builder._
         setStatus( status )
@@ -285,88 +285,68 @@ object LibertyReserveGenerator {
     values( random.nextInt( values.length ) )
   }
 
-  private def nextNumber[ L <% Long ]( minimum: L, maximum: L ): Long = {
+  private def nextNumber[ L <% Long ]( minimum: L, maximum: L ): Long =
     minimum + Math.round( random.nextFloat * ( maximum - minimum ) )
-  }
 
-  private def nextDecimalNumber[ D <% Double ]( minimum: D, maximum: D ): Double = {
+  private def nextDecimalNumber[ D <% Double ]( minimum: D, maximum: D ): Double =
     minimum + random.nextFloat * ( maximum - minimum )
-  }
 
   private def nextBoolean() = random.nextBoolean
 
   private def next[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag ](
-    builder: B, optionalEntries: Seq[ B => B ] = Seq[ B => B ]() )( required: B => B = { b: B => b } ): M = {
-
-    ( required +: ( optionalEntries filter { b => random.nextFloat < random.nextFloat } ) ).foldLeft( builder ) {
-      ( b, f ) => f( b )
-    }.build.asInstanceOf[ M ]
-
-  }
-
-  private def nextMessage[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag ](
     optionalEntries: Seq[ B => B ] = Seq[ B => B ]() )( required: B => B = { b: B => b } ): M = {
 
-    next( nextBuilder[ M, B ], optionalEntries )( required )
+    ( required +: ( optionalEntries filter { b => random.nextFloat < random.nextFloat } ) )
+      .foldLeft( nextBuilder[ M ].asInstanceOf[ B ] ) {
+        ( b, f ) => f( b )
+      }.build.asInstanceOf[ M ]
+
   }
 
-  private def nextResponse[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag, P <: GeneratedMessage: ClassTag ](
+  private def nextResponse[ M <: GeneratedMessage: ClassTag, P <: GeneratedMessage: ClassTag ](
     valid: Valid = Any )( payloadFunction: => P ): M = {
-
-    val builderClass = implicitly[ ClassTag[ B ] ].runtimeClass
-    val payloadClass = implicitly[ ClassTag[ P ] ].runtimeClass
 
     val header = responseHeader( valid )
 
-    val builder =
-      builderClass
-        .getDeclaredMethod( "setHeader", classOf[ ResponseHeader ] )
-        .invoke( nextBuilder[ M, B ], header )
-        .asInstanceOf[ B ]
-
-    lazy val emptyPayload: P = {
-      val payloadBuilder =
-        payloadClass
-          .getDeclaredMethod( "newBuilder" )
-          .invoke( null )
-
-      payloadBuilder.getClass
-        .getDeclaredMethod( "build" )
-        .invoke( payloadBuilder ).asInstanceOf[ P ]
-    }
-
-    val payload =
-      header.getStatus() match {
-        case ResponseStatus.SUCCESS => payloadFunction
-        case _                      => emptyPayload
-      }
-
-    builderClass
-      .getDeclaredMethod( "setPayload", payloadClass )
-      .invoke( builder, payload )
-      .asInstanceOf[ B ].build.asInstanceOf[ M ]
+    ProtobufBuilder[ M ]
+      .set( "header" )( header )
+      .set( "payload" ) {
+        header.getStatus match {
+          case ResponseStatus.SUCCESS => payloadFunction
+          case _                      => { ProtobufBuilder[ P ].build } // empty Payload
+        }
+      }.build
   }
 
-  private def nextRequest[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag, P <: GeneratedMessage: ClassTag ](
-    implicit payload: P, headerGenerator: RequestHeaderGenerator[ P ] ): M = {
+  private def nextRequest[ M <: GeneratedMessage: ClassTag, P <: GeneratedMessage: ClassTag ](
+    implicit payload: P, headerGenerator: RequestHeaderGenerator[ P ] ): M =
+    ProtobufBuilder[ M ]
+      .set[ RequestHeader ]( "header" )( payload )
+      .set[ P ]( "payload" )( payload )
+      .build
 
-    val header: RequestHeader = payload
-
-    val builder =
-      implicitly[ ClassTag[ B ] ].runtimeClass
-        .getDeclaredMethod( "setHeader", classOf[ RequestHeader ] )
-        .invoke( nextBuilder[ M, B ], header )
-        .asInstanceOf[ B ]
-
-    builder.getClass
-      .getDeclaredMethod( "setPayload", implicitly[ ClassTag[ P ] ].runtimeClass )
-      .invoke( builder, payload )
-      .asInstanceOf[ B ].build.asInstanceOf[ M ]
-  }
-
-  private def nextBuilder[ M <: GeneratedMessage: ClassTag, B <: Builder[ B ]: ClassTag ](): B =
+  private def nextBuilder[ M <: GeneratedMessage: ClassTag ]() =
     implicitly[ ClassTag[ M ] ].runtimeClass
       .getDeclaredMethod( "newBuilder" )
-      .invoke( null ).asInstanceOf[ B ]
+      .invoke( null ).asInstanceOf[ Builder[ Builder[ _ <: AnyRef ] ] ]
+
+  private class ProtobufBuilder[ M <: GeneratedMessage: ClassTag ] private (
+      private val builder: Builder[ Builder[ _ <: AnyRef ] ] ) {
+
+    private val builderClass = builder.getClass
+
+    def set[ T <: Object: ClassTag ]( field: String )( f: => T ): ProtobufBuilder[ M ] =
+      new ProtobufBuilder(
+        builderClass
+          .getDeclaredMethod( "set" + field.capitalize, implicitly[ ClassTag[ T ] ].runtimeClass )
+          .invoke( builder, f ).asInstanceOf[ Builder[ Builder[ _ <: AnyRef ] ] ]
+      )
+
+    def build(): M = builderClass.getDeclaredMethod( "build" ).invoke( builder ).asInstanceOf[ M ]
+  }
+
+  private object ProtobufBuilder {
+    def apply[ M <: GeneratedMessage: ClassTag ] = new ProtobufBuilder( nextBuilder[ M ] )
+  }
 
 }
