@@ -27,6 +27,7 @@ allprojects {
 
     apply from: "$rootDir/gradle/naming.gradle"
     apply plugin: 'eclipse'
+    apply plugin: 'idea'
 
     afterEvaluate {
         eclipse.project.name = artifactId
@@ -96,7 +97,7 @@ configure(javaProjects) {
 configure(protobufProjects) {
 
     ext {
-        protobufOutputDir = file("${project.buildDir}/protobuf")
+        protobufOutputDir = file("${projectDir}/generated-protobuf")
         protobufJavaOutputDir = file("${protobufOutputDir}/java")
         protobufResourcesOutputDir = file("${protobufOutputDir}/resources")
     }
@@ -107,6 +108,8 @@ configure(protobufProjects) {
         }
     }
     apply from: "$rootDir/gradle/protobuf.gradle"
+
+    clean.dependsOn('cleanProtobuf')
 }
 
 configure(scalaProjects) {

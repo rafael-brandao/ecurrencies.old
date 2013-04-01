@@ -14,5 +14,6 @@
 .settings
 bin
 build
+generated-protobuf
 gradle-app.setting
 Thumbs.db
