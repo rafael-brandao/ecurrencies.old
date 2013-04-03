@@ -4,39 +4,52 @@ import java.nio.charset.Charset
 import java.security.MessageDigest
 
 import org.joda.time.format.DateTimeFormat
+import java.nio.CharBuffer
 
-private[ util ] object TokenBuilder {
+private[util] object TokenBuilder {
 
-  private lazy val UTF8 = Charset.forName( "UTF-8" )
+  private lazy val UTF8 = Charset.forName("UTF-8")
   private lazy val `:` = ":"
-  private lazy val tokenDigester = MessageDigest.getInstance( "SHA-256" )
-  private lazy val tokenDateFormatter = DateTimeFormat.forPattern( "yyyyMMdd:HH" ).withZone( ServerTimeZone )
+  private lazy val tokenDigester = MessageDigest.getInstance("SHA-256")
+  private lazy val tokenDateFormatter = DateTimeFormat.forPattern("yyyyMMdd:HH").withZone(ServerTimeZone)
 
-  def build( securityWord: Array[ Char ], id: String, seq: Seq[ String ], date: Long ) = {
+  def build(securityWord: Array[Char], id: String, seq: Seq[String], date: Long) = {
 
-    val token =
+    val suffix =
       seq.isEmpty match {
-        case true  => new String( securityWord ) + `:` + id + `:` + ( tokenDateFormatter print date )
-        case false => new String( securityWord ) + `:` + id + `:` + seq.mkString( `:` ) + `:` + ( tokenDateFormatter print date )
+        case true => `:` + id + `:` + (tokenDateFormatter print date)
+        case false => `:` + id + `:` + seq.mkString(`:`) + `:` + (tokenDateFormatter print date)
       }
 
-    val tokenBytes = token.getBytes( UTF8 )
+    val charBuffer = CharBuffer.wrap(securityWord ++ suffix)
+    val byteBuffer = UTF8.encode(charBuffer)
+
+    val tokenBytes: Array[Byte] = new Array(byteBuffer.remaining)
+    byteBuffer.get(tokenBytes)
 
     try
-      Hex valueOf ( tokenDigester digest tokenBytes )
-    finally
-      Arrays.wipe( tokenBytes )
+      Hex valueOf (tokenDigester digest tokenBytes)
+    finally {
+      Arrays.wipe(charBuffer.array)
+      Arrays.wipe(byteBuffer.array)
+      Arrays.wipe(tokenBytes)
+    }
   }
 
   private object Arrays {
 
-    def wipe( array: Array[ Byte ] ): Unit = wipe( array, 0x00.toByte )
+    def wipe(array: Array[Byte]) {
+      wipe(array, 0x00.toByte)
+    }
 
-    def wipe( array: Array[ Char ] ): Unit = wipe( array, ' ' )
+    def wipe(array: Array[Char]) {
+      wipe(array, ' ')
+    }
 
-    def wipe[ T ]( array: Array[ T ], zero: T ) =
-      for ( i <- 0 until array.length )
-        array( i ) = zero
+    def wipe[T](array: Array[T], zero: T) {
+      for (i <- 0 until array.length)
+        array(i) = zero
+    }
   }
 
   private object Hex {
@@ -47,14 +60,15 @@ private[ util ] object TokenBuilder {
       'C'.toByte, 'D'.toByte, 'E'.toByte, 'F'.toByte
     )
 
-    def valueOf( bytes: Array[ Byte ] ) = {
-      val hex: Array[ Byte ] = new Array( 2 * bytes.length )
+    def valueOf(bytes: Array[Byte]) = {
+      val hex: Array[Byte] = new Array(2 * bytes.length)
 
-      for ( i <- 0 until bytes.length ) {
-        hex( 2 * i ) = table( ( bytes( i ) & 0xF0 ) >>> 4 )
-        hex( 2 * i + 1 ) = table( bytes( i ) & 0x0F )
+      for (i <- 0 until bytes.length) {
+        hex(2 * i) = table((bytes(i) & 0xF0) >>> 4)
+        hex(2 * i + 1) = table(bytes(i) & 0x0F)
       }
-      new String( hex, UTF8 )
+      new String(hex, UTF8)
     }
   }
+
 }
