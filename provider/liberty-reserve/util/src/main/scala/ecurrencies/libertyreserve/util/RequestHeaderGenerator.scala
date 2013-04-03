@@ -25,7 +25,7 @@ object RequestHeaderGenerator {
 
   implicit object BalanceRequestHeaderGenerator extends RequestHeaderGenerator[ BalanceRequest.Payload ]
 
-  implicit object FindTransactionHeaderGenerator extends RequestHeaderGenerator[ FindTransactionRequest.Payload ] {
+  implicit object FindTransactionRequestHeaderGenerator extends RequestHeaderGenerator[ FindTransactionRequest.Payload ] {
     override implicit val listFunction: FindTransactionRequest.Payload => Seq[ String ] =
       payload => Seq( payload.getBatchNumber.toString )
   }
@@ -39,7 +39,7 @@ object RequestHeaderGenerator {
         )
   }
 
-  implicit object TransferRequestGenerator extends RequestHeaderGenerator[ TransferRequest.Payload ] {
+  implicit object TransferRequestHeaderGenerator extends RequestHeaderGenerator[ TransferRequest.Payload ] {
     override implicit val listFunction: TransferRequest.Payload => Seq[ String ] =
       payload =>
         Seq(
