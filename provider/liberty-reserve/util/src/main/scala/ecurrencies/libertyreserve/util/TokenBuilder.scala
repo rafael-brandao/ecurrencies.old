@@ -1,5 +1,7 @@
 package ecurrencies.libertyreserve.util
 
+import scala.language.postfixOps
+
 import java.nio.charset.Charset
 import java.security.MessageDigest
 
@@ -9,8 +11,8 @@ import java.nio.CharBuffer
 private[util] object TokenBuilder {
 
   private lazy val UTF8 = Charset.forName("UTF-8")
+  private lazy val `SHA-256` = "SHA-256"
   private lazy val `:` = ":"
-  private lazy val tokenDigester = MessageDigest.getInstance("SHA-256")
   private lazy val tokenDateFormatter = DateTimeFormat.forPattern("yyyyMMdd:HH").withZone(ServerTimeZone)
 
   def build(securityWord: Array[Char], id: String, seq: Seq[String], date: Long) = {
@@ -23,16 +25,15 @@ private[util] object TokenBuilder {
 
     val charBuffer = CharBuffer.wrap(securityWord ++ suffix)
     val byteBuffer = UTF8.encode(charBuffer)
+    val messageDigester = MessageDigest.getInstance(`SHA-256`)
 
-    val tokenBytes: Array[Byte] = new Array(byteBuffer.remaining)
-    byteBuffer.get(tokenBytes)
+    messageDigester update byteBuffer
 
     try
-      Hex valueOf (tokenDigester digest tokenBytes)
+      Hex valueOf (messageDigester digest)
     finally {
       Arrays.wipe(charBuffer.array)
       Arrays.wipe(byteBuffer.array)
-      Arrays.wipe(tokenBytes)
     }
   }
 
