@@ -114,8 +114,7 @@ configure(scalaProjects) {
     apply plugin: 'scala'
 
     dependencies {
-        compile    "$scalaGroup:scala-library:$scalaVersion"
-        scalaTools "$scalaGroup:scala-compiler:$scalaVersion"
+        compile     "$scalaGroup:scala-library:$scalaVersion"
         testCompile "${scalaTestGroup}:scalatest_${scalaTestScalaVersion}:${scalaTestVersion}",
                 "${junitGroup}:junit:${junitVersion}"
     }
