@@ -3,5 +3,7 @@ deployFilters += /ecurrencies-application/
 
 dependencies { compile project(':application') }
 
-jar.enabled = false
-sourcesJar.enabled = false
+afterEvaluate {
+    jar.enabled = false
+    sourcesJar.enabled = false
+}
