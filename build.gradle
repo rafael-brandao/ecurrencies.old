@@ -1,16 +1,25 @@
 import org.apache.tools.ant.filters.ReplaceTokens
 import org.apache.tools.ant.taskdefs.condition.Os
 
+buildscript {
+    repositories {
+        mavenCentral()
+    }
+    dependencies {
+        classpath 'ws.antonov.gradle.plugins:gradle-plugin-protobuf:0.7'
+    }
+}
+
 ext {
     jvm = org.gradle.internal.jvm.Jvm.current()
     javaVersion = JavaVersion.current()
-    assert javaVersion.java7 : "Must use a Java 7 compatible JVM to perform this build. Current JVM is ${jvm}"
+    assert javaVersion.java7: "Must use a Java 7 compatible JVM to perform this build. Current JVM is ${jvm}"
 
-    protobufProjects = []
-    javaProjects = []
-    scalaProjects = []
+    protobufProjects = [] as Set
+    javaProjects = [] as Set
+    scalaProjects = [] as Set
 
-    distributionProjects = []
+    distributionProjects = [] as Set
 
     apply from: "$rootDir/gradle/subprojects.gradle"
 }
@@ -20,7 +29,7 @@ allprojects {
     version = rootProject.version
 
     ext {
-        versionBindings = project.ext.properties.findAll{ it.key ==~ /^[\w]+Version$/ }
+        versionBindings = project.ext.properties.findAll { it.key ==~ /^[\w]+Version$/ }
     }
 
     apply from: "$rootDir/gradle/naming.gradle"
@@ -51,8 +60,8 @@ configure(javaProjects) {
     targetCompatibility = javaVersion
 
     jar {
-        manifest.attributes << ['Implementation-Title':artifactId]
-        manifest.attributes << ['Implementation-Version':version]
+        manifest.attributes << ['Implementation-Title': artifactId]
+        manifest.attributes << ['Implementation-Version': version]
 
         from("$rootDir/src/dist") {
             include "license.txt"
@@ -78,43 +87,49 @@ configure(javaProjects) {
         }
     }
 
-    task sourcesJar(type: Jar, dependsOn:classes) {
-        classifier = "sources"
-        from sourceSets.main.allSource.srcDirs
-    }
-
-    artifacts { archives sourcesJar }
-
     tasks.withType(JavaCompile) {
         it.options.encoding = 'UTF-8'
     }
 
-    afterEvaluate { archivesBaseName = artifactId }
+    afterEvaluate { 
+        archivesBaseName = artifactId
+
+        task sourcesJar(type: Jar, dependsOn: classes) {
+            classifier = "sources"
+            from sourceSets.main.allSource.srcDirs
+        }
+
+        artifacts { archives sourcesJar }
+    }
 }
 
 configure(protobufProjects) {
+    apply plugin: 'protobuf'
 
-    ext {
-        protobufOutputDir = file("${projectDir}/generated-protobuf")
-        protobufJavaOutputDir = file("${protobufOutputDir}/java")
-        protobufResourcesOutputDir = file("${protobufOutputDir}/resources")
+    dependencies {
+        compile "${protobufGroup}:protobuf-java:${protobufVersion}"
     }
-    sourceSets {
-        main {
-            java { srcDirs += "${protobufOutputDir}/java" }
-            resources { srcDirs += "${protobufOutputDir}/resources" }
-        }
-    }
-    apply from: "$rootDir/gradle/protobuf.gradle"
 
-    clean.dependsOn('cleanProtobuf')
+    /*
+     * Amazingly stupid hack to export generated classes in idea ide
+     *
+     * This happens because idea ide prevents any generated source dir inside build 
+     * dir to be considered a valid source dir.
+     *
+     */
+    ext.protoGeneratedSources = file("${projectDir}/generated-sources")
+    sourceSets.main.java { srcDirs += protoGeneratedSources }
+
+    generateProto.destinationDir = protoGeneratedSources
+    clean.dependsOn('cleanGenerateProto')
 }
 
 configure(scalaProjects) {
     apply plugin: 'scala'
 
     dependencies {
-        compile     "$scalaGroup:scala-library:$scalaVersion"
+        compile "$scalaGroup:scala-library:$scalaVersion"
+        scalaTools "$scalaGroup:scala-compiler:$scalaVersion"
         testCompile "${scalaTestGroup}:scalatest_${scalaTestScalaVersion}:${scalaTestVersion}",
                 "${junitGroup}:junit:${junitVersion}"
     }
@@ -125,7 +140,7 @@ configure(scalaProjects) {
             additionalParameters = ['-feature']
             deprecation = true
             encoding = 'UTF-8'
-            useAnt   = false
+            useAnt = false
         }
     }
 }
@@ -145,7 +160,7 @@ configure(distributionProjects) {
 
         JAVA_OPTS = '-Xms1024M -Xmx1024M -Xss1M -XX:MaxPermSize=256M -XX:+UseParallelGC'
 
-        if(!project.hasProperty('env'))
+        if (!project.hasProperty('env'))
             env = 'default'
 
         srcDir = "$projectDir/src/akka/dist"
@@ -165,21 +180,21 @@ configure(distributionProjects) {
         bootableClass = ""
     }
 
-    configurations.all*.exclude group: 'org.parboiled' , module : 'parboiled-scala_2.10.0-RC5'
+    configurations.all*.exclude group: 'org.parboiled', module: 'parboiled-scala_2.10.0-RC5'
 
-    task generateConfig(type: Copy, group:'akka'){
+    task generateConfig(type: Copy, group: 'akka') {
         def configFile = file(project.ext.configFile)
         from configFile
         into configOutputDir
         rename(configFile.name, "application.conf")
     }
 
-    task generateScripts(type:Copy, group:'akka') {
+    task generateScripts(type: Copy, group: 'akka') {
         from scriptsInputDir
         into scriptsOutputDir
     }
 
-    task distribution(group:'akka') {
+    task distribution(group: 'akka') {
 
         dependsOn check
         dependsOn generateScripts
@@ -192,7 +207,7 @@ configure(distributionProjects) {
             configurations.compile.files.each { file ->
                 deployed = false
                 deployFilters.each {
-                    if(file.name =~ it) {
+                    if (file.name =~ it) {
                         copy {
                             from file
                             into deployDir
@@ -200,10 +215,10 @@ configure(distributionProjects) {
                         deployed = true
                     }
                 }
-                if(deployed)
+                if (deployed)
                     return
 
-                if(file.name =~ /scala-library/)
+                if (file.name =~ /scala-library/)
                     copy {
                         from file
                         into libDir
@@ -221,7 +236,7 @@ configure(distributionProjects) {
         }
     }
 
-    task execute(type:Exec, group: 'akka') {
+    task execute(type: Exec, group: 'akka') {
         dependsOn build
 
         logging.captureStandardOutput(LogLevel.LIFECYCLE)
@@ -235,8 +250,7 @@ configure(distributionProjects) {
 
             if (Os.isFamily(Os.FAMILY_WINDOWS)) {
                 commandLine 'cmd', '/c', 'start', 'akka.bat', bootableClass
-            }
-            else {
+            } else {
                 throw new GradleException("Non windows env execution is not supported yet")
             }
         }

@@ -1,17 +1,25 @@
-ext {
-    javaMarkup = [
-        'src/main/java',
-        'src/main/resources',
-        'src/test/java',
-        'src/test/resources'
-    ]
-    scalaMarkup = [
-        'src/main/scala',
-        'src/test/scala'
-    ]
-    protobufMarkup = /^.+\.proto$/
-    distributionMarkup = 'src/dist'
-}
+def javaMarkup = [
+                'src/main/java',
+                'src/main/resources',
+                'src/test/java',
+                'src/test/resources'
+            ]
+
+def scalaMarkup = [
+                'src/main/scala',
+                'src/test/scala'
+            ]
+        
+def protobufFileMarkup = /^.+\.proto$/
+
+def protobufMarkup = [
+                'src/main/proto'
+            ]
+
+def distributionMarkup = [ 
+                'src/akka/dist' 
+            ]
+
 
 def anySubdirectoryExists(project, list) {
     list.any {
@@ -19,20 +27,31 @@ def anySubdirectoryExists(project, list) {
     }
 }
 
+def listOfFilesIn(project, directoryList, markup) {
+    def fileList = []
+    directoryList.each {
+        def dir = file("${project.projectDir}/${it}")
+        if(dir.isDirectory()) {
+            fileList += dir.listFiles( { it ==~ markup } as FileFilter ).toList()
+        }
+    }
+    fileList
+}
+
 subprojects.findAll {
     it.childProjects.size() == 0
 }.each {
-    def protobufFiles = it.projectDir.listFiles({ it ==~ protobufMarkup } as FileFilter).toList()
+    def protobufFiles = listOfFilesIn(it, protobufMarkup, protobufFileMarkup)
     def isProtobufProject = protobufFiles.size() > 0
     def isDistributionProject = anySubdirectoryExists(it, distributionMarkup )
     def isScalaProject = anySubdirectoryExists(it, scalaMarkup )
     def isJavaProject = anySubdirectoryExists(it, javaMarkup ) || isProtobufProject || isScalaProject || isDistributionProject
 
     if(isProtobufProject) {
-        protobufProjects.push it
+        protobufProjects += it
         it.ext.protobufFiles = protobufFiles
     }
-    if(isDistributionProject) distributionProjects.push it
-    if(isScalaProject) scalaProjects.push it
-    if(isJavaProject ) javaProjects.push it
+    if(isDistributionProject) distributionProjects += it
+    if(isScalaProject) scalaProjects += it
+    if(isJavaProject ) javaProjects += it
 }
