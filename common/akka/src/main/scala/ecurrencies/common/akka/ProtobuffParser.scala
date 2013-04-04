@@ -1,37 +1,43 @@
 package ecurrencies.common.akka
 
 import scala.reflect.ClassTag
+import scala.util.control.NonFatal
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, Status }
+import akka.actor.{Actor, ActorLogging, ActorRef, Status}
 
-import com.google.protobuf.{ GeneratedMessage, InvalidProtocolBufferException }
+import com.google.protobuf.{GeneratedMessage, InvalidProtocolBufferException}
 
 import ecurrencies.api.EcurrencyServiceException
 
-class ProtobuffParser[ T <: GeneratedMessage: ClassTag ]( next: ActorRef ) extends Actor with ActorLogging {
-
-  def receive = {
-    case payload: Array[ Byte ] =>
-      try {
-        next forward ( ProtobuffParser parse payload )
-      } catch {
-        case e if e.getCause.getClass.isAssignableFrom( classOf[ InvalidProtocolBufferException ] ) =>
-          sender ! Status.Failure( new EcurrencyServiceException( false, e ) )
-        case e: Exception =>
-          sender ! Status.Failure( new EcurrencyServiceException( true, e ) )
-      }
-  }
-}
 
 object ProtobuffParser {
 
-  def apply[ T <: GeneratedMessage: ClassTag ]( next: ActorRef ) = new ProtobuffParser[ T ]( next )
+  private lazy val parseFrom = "parseFrom"
 
-  private[ akka ] def parse[ T <: GeneratedMessage: ClassTag ]( payload: Array[ Byte ] ): T = {
-    implicitly[ ClassTag[ T ] ].runtimeClass
-      .getDeclaredMethod( "parseFrom", classOf[ Array[ Byte ] ] )
-      .invoke( null, payload )
-      .asInstanceOf[ T ]
+  def apply[T <: GeneratedMessage : ClassTag](next: ActorRef) = new ProtobuffParser[T](next)
+
+  private[akka] def parsed[T <: GeneratedMessage : ClassTag](payload: Array[Byte]): T =
+    implicitly[ClassTag[T]].runtimeClass
+      .getDeclaredMethod(parseFrom, classOf[Array[Byte]])
+      .invoke(null, payload)
+      .asInstanceOf[T]
+
+
+}
+
+class ProtobuffParser[T <: GeneratedMessage : ClassTag](next: ActorRef) extends Actor with ActorLogging {
+
+  import ProtobuffParser._
+
+  def receive = {
+    case payload: Array[Byte] =>
+      try {
+        next forward parsed(payload)
+      } catch {
+        case e if e.getCause.getClass.isAssignableFrom(classOf[InvalidProtocolBufferException]) =>
+          sender ! Status.Failure(new EcurrencyServiceException(false, e))
+        case NonFatal(t) =>
+          sender ! Status.Failure(new EcurrencyServiceException(true, t))
+      }
   }
-
 }
