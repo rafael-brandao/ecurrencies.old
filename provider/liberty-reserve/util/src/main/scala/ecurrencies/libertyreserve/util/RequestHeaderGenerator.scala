@@ -10,13 +10,13 @@ sealed trait RequestHeaderGenerator[ M <: GeneratedMessage ] {
 
   protected val listFunction: M => Seq[ String ] = message => Seq.empty[ String ]
 
-  def create( payload: M, api: Api, securityWord: Array[ Char ], id: String = generateId( now() ), date: Long = now() ): RequestHeader = {
+  def create( payload: M, api: Api, securityWord: Array[ Char ], id: String = generateId( now() ), date: Long = now() ) =
     RequestHeader.newBuilder
       .setId( id )
       .setApi( api )
       .setToken( TokenBuilder build ( securityWord, id, listFunction( payload ), date ) )
       .build
-  }
+
 }
 
 object RequestHeaderGenerator {
