@@ -5,5 +5,10 @@ class EcurrencyServiceException(recoverable: Boolean, cause: Throwable) extends 
   def this(recoverable: Boolean) = this(recoverable, null)
 
   def isRecoverable = recoverable
+}
 
+object EcurrencyServiceException {
+  def apply(recoverable: Boolean, cause: Throwable) = new EcurrencyServiceException(recoverable, cause)
+
+  def apply(recoverable: Boolean) = new EcurrencyServiceException(recoverable)
 }

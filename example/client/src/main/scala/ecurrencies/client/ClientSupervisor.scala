@@ -1,12 +1,12 @@
 package ecurrencies.client
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
 import scala.concurrent.duration.{ FiniteDuration, DurationLong }
 import scala.language.postfixOps
 import scala.util.Random
 
-import akka.actor.{ Actor, ActorContext, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, PoisonPill, Props, SupervisorStrategy }
-import akka.pattern.{ AskTimeoutException, gracefulStop }
+import akka.actor.{ Actor, ActorContext, ActorLogging, ActorRef, ActorSystem, OneForOneStrategy, Props, SupervisorStrategy }
+import akka.pattern.gracefulStop
 import akka.routing.{ Broadcast, RoundRobinRouter }
 
 import com.rabbitmq.client.{ Channel, ConnectionFactory }
@@ -20,7 +20,6 @@ case object Stop
 class ClientSupervisor extends Actor with ActorLogging {
 
   import RabbitMQ._
-  import Settings._
   import ClientSupervisor._
   import SupervisorStrategy.Restart
   import context._
@@ -49,8 +48,8 @@ class ClientSupervisor extends Actor with ActorLogging {
       stopActorRef( eventBasedConsumer, 5 seconds, Some( "EventBasedConsumers" ) )
   }
 
-  override def postStop {
-    connection.close
+  override def postStop() {
+    connection.close()
   }
 
 }
@@ -134,7 +133,7 @@ object ClientSupervisor {
   private def createActorRef[ T <: Actor ]( instances: Int = 1 )( f: => T )( implicit context: ActorContext ) = {
     val props = Props( f )
     instances match {
-      case instances if instances > 1 => context.actorOf( props.withRouter( RoundRobinRouter( instances ) ) )
+      case number if number > 1 => context.actorOf( props.withRouter( RoundRobinRouter( number ) ) )
       case _                          => context.actorOf( props )
     }
   }
@@ -142,7 +141,7 @@ object ClientSupervisor {
   def stopActorRef( actorRef: ActorRef, timeout: FiniteDuration, id: Option[ String ] = None )( implicit system: ActorSystem ) {
     val actualId: String =
       id match {
-        case Some( id ) => id
+        case Some( identification ) => identification
         case None       => actorRef.path.toString
       }
     import system.log
