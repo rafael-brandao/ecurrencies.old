@@ -21,8 +21,6 @@ object ProtobuffParser {
       .getDeclaredMethod(parseFrom, classOf[Array[Byte]])
       .invoke(null, payload)
       .asInstanceOf[T]
-
-
 }
 
 class ProtobuffParser[T <: GeneratedMessage : ClassTag](next: ActorRef) extends Actor with ActorLogging {
@@ -35,9 +33,9 @@ class ProtobuffParser[T <: GeneratedMessage : ClassTag](next: ActorRef) extends 
         next forward parsed(payload)
       } catch {
         case e if e.getCause.getClass.isAssignableFrom(classOf[InvalidProtocolBufferException]) =>
-          sender ! Status.Failure(new EcurrencyServiceException(false, e))
+          sender ! Status.Failure(EcurrencyServiceException(recoverable = false, e))
         case NonFatal(t) =>
-          sender ! Status.Failure(new EcurrencyServiceException(true, t))
+          sender ! Status.Failure(EcurrencyServiceException(recoverable = true, t))
       }
   }
 }
