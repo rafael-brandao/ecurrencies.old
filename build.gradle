@@ -137,7 +137,7 @@ configure(scalaProjects) {
     tasks.withType(ScalaCompile).each {
         it.options.encoding = 'UTF-8'
         it.scalaCompileOptions.with {
-            additionalParameters = ['-feature', '-Ywarn-all']
+            additionalParameters = ['-feature', '-Yinline-warnings', '-Ywarn-all']
             deprecation = true
             encoding = 'UTF-8'
             useAnt = false
