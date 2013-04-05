@@ -112,7 +112,7 @@ class EventBasedConsumer(val createChannel: () => Channel, val queue: String, va
     new DefaultConsumer(channel) {
       override def handleDelivery(consumerTag: String, envelope: Envelope, properties: AMQP.BasicProperties,
                                   body: Array[Byte]) {
-        self !(consumerTag, envelope, properties, body)
+        self ! Tuple4(consumerTag, envelope, properties, body)
       }
     }
 
