@@ -7,7 +7,7 @@ import scala.concurrent.{Await, Future}
 import scala.concurrent.duration.DurationLong
 import scala.language.postfixOps
 
-import akka.actor.{ActorRef, ActorSystem, Props}
+import akka.actor.{ActorRef, ActorSystem, Props, UnhandledMessage}
 import akka.kernel.Bootable
 import akka.pattern.gracefulStop
 
@@ -15,6 +15,7 @@ import com.typesafe.config.ConfigFactory
 
 import ecurrencies.libertyreserve.service.LibertyReserveSupervisor
 import ecurrencies.service.amqp.AmqpSupervisor
+import ecurrencies.common.akka.UnhandledMessageListener
 
 class Application extends Bootable {
 
@@ -28,6 +29,9 @@ class Application extends Bootable {
 
   @inline
   final def startup() {
+    val listener = system.actorOf(Props[UnhandledMessageListener], "UnhandledMessageListener")
+    system.eventStream.subscribe(listener, classOf[UnhandledMessage])
+
     ecurrencyActors += system.actorOf(Props[LibertyReserveSupervisor], "liberty-reserve")
     amqpSupervisor = system.actorOf(Props[AmqpSupervisor])
   }
