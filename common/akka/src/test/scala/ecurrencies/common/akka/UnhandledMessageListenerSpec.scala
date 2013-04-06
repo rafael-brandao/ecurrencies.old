@@ -19,9 +19,9 @@ class UnhandledMessageListenerSpec extends TestKit(ActorSystem()) with WordSpec 
 with SharedTestFixture {
 
   val echoActorRef = system.actorOf(Props[EchoActor], "EchoActor")
-  val listener = system.actorOf(Props[UnhandledMessageListener], "UnhandledMessageListener")
 
   override def beforeAll() {
+    val listener = system.actorOf(Props[UnhandledMessageListener], "UnhandledMessageListener")
     system.eventStream.subscribe(listener, classOf[UnhandledMessage])
   }
 
