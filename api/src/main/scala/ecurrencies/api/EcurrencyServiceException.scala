@@ -1,10 +1,11 @@
 package ecurrencies.api
 
-class EcurrencyServiceException(recoverable: Boolean, cause: Throwable) extends Exception(cause) {
+@SerialVersionUID(1L)
+class EcurrencyServiceException(recoverable: Boolean, cause: Throwable) extends Exception(cause) with Serializable {
 
   def this(recoverable: Boolean) = this(recoverable, null)
 
-  def isRecoverable = recoverable
+  lazy val isRecoverable = recoverable
 }
 
 object EcurrencyServiceException {
